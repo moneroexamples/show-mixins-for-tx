@@ -164,7 +164,7 @@ int main(int ac, const char* av[]) {
                 continue;
             }
 
-            cout << "   - tx hash         : " << tx_hash;
+            cout << "   - tx hash        : " << tx_hash;
 
             cryptonote::tx_out found_output;
 

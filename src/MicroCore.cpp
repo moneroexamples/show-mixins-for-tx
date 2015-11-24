@@ -132,6 +132,9 @@ namespace xmreg
 
 
 
+    /**
+     * Find output with given public key in a given transaction
+     */
     bool
     MicroCore::find_output_in_tx(const transaction& tx,
                                  const public_key& output_pubkey,
