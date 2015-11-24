@@ -64,6 +64,10 @@ namespace xmreg
     timestamp_to_str(time_t timestamp, const char* format = "%F %T");
 
 
+    ostream&
+    operator<< (ostream& os, const account_public_address& addr);
+
+
     string
     get_default_lmdb_folder();
 

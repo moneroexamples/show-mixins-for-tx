@@ -21,16 +21,12 @@ namespace xmreg
         desc.add_options()
                 ("help,h", value<bool>()->default_value(false)->implicit_value(true),
                  "produce help message")
-                ("address,a", value<string>(),
-                 "monero address string")
+                ("txhash,t", value<string>(),
+                 "transaction hash")
                 ("viewkey,v", value<string>(),
                  "private view key string")
-                ("start-height,t", value<size_t>(),
-                 "start from given height")
-                ("start-date,d", value<string>(),
-                 "start roughly from given date: yyyy-mm-dd")
-                ("out-csv-file,c", value<string>(),
-                 "private view key string")
+                ("address,a", value<string>(),
+                 "monero address string")
                 ("bc-path,b", value<string>(),
                  "path to lmdb blockchain");
 

@@ -43,7 +43,7 @@ namespace xmreg
     // explicit instantiations of get template function
     template bool parse_str_secret_key<crypto::secret_key>(const string& key_str, crypto::secret_key& secret_key);
     template bool parse_str_secret_key<crypto::public_key>(const string& key_str, crypto::public_key& secret_key);
-
+    template bool parse_str_secret_key<crypto::hash>(const string& key_str, crypto::hash& secret_key);
 
     /**
      * Get transaction tx using given tx hash. Hash is represent as string here,
@@ -149,6 +149,14 @@ namespace xmreg
         len = std::strftime(str_buff, TIME_LENGTH, format, tm_ptr);
 
         return string(str_buff, len);
+    }
+
+
+    ostream&
+    operator<< (ostream& os, const account_public_address& addr)
+    {
+        os << "<" << get_account_address_as_str(false, addr) << ">";
+        return os;
     }
 
 
