@@ -132,6 +132,104 @@ namespace xmreg
 
 
 
+    bool
+    MicroCore::find_output_in_tx(const transaction& tx,
+                                 const public_key& output_pubkey,
+                                 tx_out& out)
+    {
+        // search in the ouputs for an output which
+        // public key matches to what we want
+        auto it = std::find_if(tx.vout.begin(), tx.vout.end(),
+                               [&](const tx_out& o)
+                               {
+                                   const txout_to_key& tx_in_to_key
+                                           = boost::get<txout_to_key>(o.target);
+
+                                   return tx_in_to_key.key == output_pubkey;
+                               });
+
+        if (it != tx.vout.end())
+        {
+            // we found the desired public key
+            out = *it;
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Returns tx hash in a given block which
+     * contains given output's public key
+     */
+    bool
+    MicroCore::get_tx_hash_from_output_pubkey(const public_key& output_pubkey,
+                                              const uint64_t& block_height,
+                                              crypto::hash& tx_hash,
+                                              cryptonote::transaction& tx_found)
+    {
+
+        tx_hash = null_hash;
+
+        // get block of given height
+        block blk;
+        if (!get_block_by_height(block_height, blk))
+        {
+            cerr << "Cant get block of height: " << block_height << endl;
+            return false;
+        }
+
+
+        // get all transactions in the block found
+        // initialize the first list with transaction for solving
+        // the block i.e. coinbase.
+        list<transaction> txs {blk.miner_tx};
+        list<crypto::hash> missed_txs;
+
+        if (!m_blockchain_storage.get_transactions(blk.tx_hashes, txs, missed_txs))
+        {
+            cerr << "Cant find transcations in block: " << block_height << endl;
+            return false;
+        }
+
+        if (!missed_txs.empty())
+        {
+            cerr << "Transactions not found in blk: " << block_height << endl;
+
+            for (const crypto::hash& h : missed_txs)
+            {
+                cerr << " - tx hash: " << h << endl;
+            }
+
+            return false;
+        }
+
+
+        // search outputs in each transactions
+        // until output with pubkey of interest is found
+        for (const transaction& tx : txs)
+        {
+
+            tx_out found_out;
+
+            if (find_output_in_tx(tx, output_pubkey, found_out))
+            {
+                // we found the desired public key
+                tx_hash = get_transaction_hash(tx);
+                tx_found = tx;
+                return true;
+            }
+
+        }
+
+        return false;
+    }
+
+
+
+
+
     /**
      * De-initialized Blockchain.
      *

@@ -46,6 +46,17 @@ namespace xmreg
         bool
         get_tx(const crypto::hash& tx_hash, transaction& tx);
 
+        bool
+        find_output_in_tx(const transaction& tx,
+                          const public_key& output_pubkey,
+                          tx_out& out);
+
+        bool
+        get_tx_hash_from_output_pubkey(const public_key& output_pubkey,
+                                       const uint64_t& block_height,
+                                       crypto::hash& tx_hash,
+                                       transaction& tx_found);
+
 
         virtual ~MicroCore();
     };

@@ -2,21 +2,11 @@
 #include "src/CmdLineOptions.h"
 #include "src/tools.h"
 
-
-using xmreg::operator<<;
-
-
 using namespace std;
 
-
-
-
-
+using xmreg::operator<<;
 using boost::filesystem::path;
 
-// without this it wont work. I'm not sure what it does.
-// it has something to do with locking the blockchain and tx pool
-// during certain operations to avoid deadlocks.
 unsigned int epee::g_test_dbg_lock_sleep = 0;
 
 
@@ -149,14 +139,43 @@ int main(int ac, const char* av[]) {
 
             // get tx hash and output index for output
             if (count < outputs.size())
+            {
                 output_index = outputs.at(count);
+            }
             else
+            {
                 output_index = core_storage.get_db().get_output_key(tx_in_to_key.amount, i);
+            }
+
+            cout << " - mixin no: " << count + 1 << ", block height: " << output_index.height << "\n"
+                 << "   - output's pubkey: " << output_index.pubkey << endl;
 
 
-            cout << " - mixin no: " << i + 1
-                 << ", block height: " << output_index.height
-                 << ", pubkey: " << output_index.pubkey << endl;
+            crypto::hash tx_hash;
+            cryptonote::transaction tx_found;
+
+            // find tx_hash with given output
+            if (!mcore.get_tx_hash_from_output_pubkey(
+                    output_index.pubkey,
+                    output_index.height,
+                    tx_hash, tx_found))
+            {
+                cout << " - cant find tx_hash for ouput: " <<   output_index.pubkey << endl;
+                continue;
+            }
+
+            cout << "   - tx hash         : " << tx_hash;
+
+            cryptonote::tx_out found_output;
+
+            if (!mcore.find_output_in_tx(tx_found, output_index.pubkey, found_output))
+            {
+                cout << " - cant find tx_out for ouput: " <<   output_index.pubkey << endl;
+                continue;
+            }
+
+            cout << ", " << cryptonote::print_money(found_output.amount)
+                 << endl;
 
             ++count;
         }

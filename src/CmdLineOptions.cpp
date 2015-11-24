@@ -15,8 +15,10 @@ namespace xmreg
 
         positional_options_description p;
 
+        p.add("txhash", -1);
+
         options_description desc(
-                "xmr2csv, export all your transactions into csv file");
+                "showmixins, shows mixin outputs used for each input in a given transaction");
 
         desc.add_options()
                 ("help,h", value<bool>()->default_value(false)->implicit_value(true),
@@ -33,6 +35,7 @@ namespace xmreg
 
         store(command_line_parser(acc, avv)
                           .options(desc)
+                          .positional(p)
                           .run(), vm);
 
         notify(vm);
