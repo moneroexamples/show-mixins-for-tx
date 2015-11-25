@@ -94,10 +94,14 @@ int main(int ac, const char* av[]) {
 
 
     // lets check our keys
+//    cout << "\n"
+//         << "tx_hash          : " << tx_hash << "\n"
+//         << "private view key : " << prv_view_key << "\n"
+//         << "address          : " << address << "\n"
+//         << endl;
+
     cout << "\n"
          << "tx_hash          : " << tx_hash << "\n"
-         << "private view key : " << prv_view_key << "\n"
-         << "address          : " << address << "\n"
          << endl;
 
     cryptonote::transaction tx;
@@ -120,7 +124,7 @@ int main(int ac, const char* av[]) {
                 = boost::get<cryptonote::txin_to_key>(tx_in);
 
 
-        cout << "Key_image: " << tx_in_to_key.k_image
+        cout << "Input's Key image: " << tx_in_to_key.k_image
              << ", amount: " << cryptonote::print_money(tx_in_to_key.amount) << endl;
 
 
@@ -164,7 +168,7 @@ int main(int ac, const char* av[]) {
                 continue;
             }
 
-            cout << "   - tx hash        : " << tx_hash;
+            cout << "   - in tx with hash : " << tx_hash;
 
             cryptonote::tx_out found_output;
 
