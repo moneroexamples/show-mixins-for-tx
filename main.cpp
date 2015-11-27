@@ -23,6 +23,11 @@ int main(int ac, const char* av[]) {
         return 0;
     }
 
+
+    // flag indicating if viewkey and address were
+    // given by the user
+    bool VIEWKEY_AND_ADDRESS_GIVEN {false};
+
     // get other options
     auto tx_hash_opt = opts.get_option<string>("txhash");
     auto viewkey_opt = opts.get_option<string>("viewkey");
@@ -30,12 +35,43 @@ int main(int ac, const char* av[]) {
     auto bc_path_opt = opts.get_option<string>("bc-path");
 
 
-
     // get the program command line options, or
     // some default values for quick check
-    string tx_hash_str = tx_hash_opt ? *tx_hash_opt : "66040ad29f0d780b4d47641a67f410c28cce575b5324c43b784bb376f4e30577";
-    string viewkey_str   = viewkey_opt ? *viewkey_opt : "1ddabaa51cea5f6d9068728dc08c7ffaefe39a7a4b5f39fa8a976ecbe2cb520a";
-    string address_str = address_opt ? *address_opt : "48daf1rG3hE1Txapcsxh6WXNe9MLNKtu7W7tKTivtSoVLHErYzvdcpea2nSTgGkz66RFP4GKVAsTV14v6G3oddBTHfxP6tU";
+    string tx_hash_str = tx_hash_opt ? *tx_hash_opt : "09d9e8eccf82b3d6811ed7005102caf1b605f325cf60ed372abeb4a67d956fff";
+
+
+    crypto::hash tx_hash;
+
+    if (!xmreg::parse_str_secret_key(tx_hash_str, tx_hash))
+    {
+        cerr << "Cant parse tx hash: " << tx_hash_str << endl;
+        return 1;
+    }
+
+    crypto::secret_key prv_view_key;
+    cryptonote::account_public_address address;
+
+    if (viewkey_opt && address_opt)
+    {
+        // string viewkey_str = viewkey_opt ? *viewkey_opt : "1ddabaa51cea5f6d9068728dc08c7ffaefe39a7a4b5f39fa8a976ecbe2cb520a";
+        // string address_str = address_opt ? *address_opt : "48daf1rG3hE1Txapcsxh6WXNe9MLNKtu7W7tKTivtSoVLHErYzvdcpea2nSTgGkz66RFP4GKVAsTV14v6G3oddBTHfxP6tU";
+
+        // parse string representing given private viewkey
+        if (!xmreg::parse_str_secret_key(*viewkey_opt, prv_view_key))
+        {
+            cerr << "Cant parse view key: " << *viewkey_opt << endl;
+            return 1;
+        }
+
+        // parse string representing given monero address
+        if (!xmreg::parse_str_address(*address_opt,  address))
+        {
+            cerr << "Cant parse address: " << *address_opt << endl;
+            return 1;
+        }
+
+        VIEWKEY_AND_ADDRESS_GIVEN = true;
+    }
 
 
     path blockchain_path;
@@ -51,6 +87,17 @@ int main(int ac, const char* av[]) {
     // enable basic monero log output
     xmreg::enable_monero_log();
 
+
+    cout << "\n"
+         << "tx_hash              : " << tx_hash << endl;
+
+    if (VIEWKEY_AND_ADDRESS_GIVEN)
+    {
+        // lets check our keys
+        cout << "private view key : " << prv_view_key << "\n"
+             << "address          : " << address << "\n" << endl;
+    }
+
     // create instance of our MicroCore
     xmreg::MicroCore mcore;
 
@@ -64,45 +111,6 @@ int main(int ac, const char* av[]) {
     // get the high level cryptonote::Blockchain object to interact
     // with the blockchain lmdb database
     cryptonote::Blockchain& core_storage = mcore.get_core();
-
-
-    // parse string representing given private viewkey
-    crypto::secret_key prv_view_key;
-
-    if (!xmreg::parse_str_secret_key(viewkey_str, prv_view_key))
-    {
-        cerr << "Cant parse view key: " << viewkey_str << endl;
-        return 1;
-    }
-
-    crypto::hash tx_hash;
-
-    if (!xmreg::parse_str_secret_key(tx_hash_str, tx_hash))
-    {
-        cerr << "Cant parse tx hash: " << tx_hash_str << endl;
-        return 1;
-    }
-
-    // parse string representing given monero address
-    cryptonote::account_public_address address;
-
-    if (!xmreg::parse_str_address(address_str,  address))
-    {
-        cerr << "Cant parse string address: " << address_str << endl;
-        return 1;
-    }
-
-
-    // lets check our keys
-//    cout << "\n"
-//         << "tx_hash          : " << tx_hash << "\n"
-//         << "private view key : " << prv_view_key << "\n"
-//         << "address          : " << address << "\n"
-//         << endl;
-
-    cout << "\n"
-         << "tx_hash          : " << tx_hash << "\n"
-         << endl;
 
     cryptonote::transaction tx;
 
@@ -186,8 +194,6 @@ int main(int ac, const char* av[]) {
 
         cout << endl;
     }
-
-
 
     cout << "\nEnd of program." << endl;
 
