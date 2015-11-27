@@ -49,7 +49,8 @@ namespace xmreg
         bool
         find_output_in_tx(const transaction& tx,
                           const public_key& output_pubkey,
-                          tx_out& out);
+                          tx_out& out,
+                          size_t& output_index);
 
         bool
         get_tx_hash_from_output_pubkey(const public_key& output_pubkey,

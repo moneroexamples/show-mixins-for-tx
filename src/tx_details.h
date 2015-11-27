@@ -46,7 +46,11 @@ namespace xmreg
                           const public_key& public_spend_key,
                           uint64_t block_height = 0);
 
-
+    bool
+    is_output_ours(const size_t& output_index,
+                   const transaction& tx,
+                   const secret_key& private_view_key,
+                   const public_key& public_spend_key);
 
 }
 

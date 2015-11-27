@@ -147,20 +147,20 @@ int main(int ac, const char* av[]) {
 
         for (const uint64_t& i: absolute_offsets)
         {
-            cryptonote::output_data_t output_index;
+            cryptonote::output_data_t output_data;
 
             // get tx hash and output index for output
             if (count < outputs.size())
             {
-                output_index = outputs.at(count);
+                output_data = outputs.at(count);
             }
             else
             {
-                output_index = core_storage.get_db().get_output_key(tx_in_to_key.amount, i);
+                output_data = core_storage.get_db().get_output_key(tx_in_to_key.amount, i);
             }
 
-            cout << " - mixin no: " << count + 1 << ", block height: " << output_index.height << "\n"
-                 << "   - output's pubkey: " << output_index.pubkey << endl;
+            cout << " - mixin no: " << count + 1 << ", block height: " << output_data.height << "\n"
+                 << "   - output's pubkey: " << output_data.pubkey << endl;
 
 
             crypto::hash tx_hash;
@@ -168,25 +168,27 @@ int main(int ac, const char* av[]) {
 
             // find tx_hash with given output
             if (!mcore.get_tx_hash_from_output_pubkey(
-                    output_index.pubkey,
-                    output_index.height,
+                    output_data.pubkey,
+                    output_data.height,
                     tx_hash, tx_found))
             {
-                cout << " - cant find tx_hash for ouput: " <<   output_index.pubkey << endl;
+                cout << " - cant find tx_hash for ouput: " <<   output_data.pubkey << endl;
                 continue;
             }
 
             cout << "   - in tx with hash: " << tx_hash;
 
             cryptonote::tx_out found_output;
+            size_t output_index;
 
-            if (!mcore.find_output_in_tx(tx_found, output_index.pubkey, found_output))
+            if (!mcore.find_output_in_tx(tx_found, output_data.pubkey, found_output, output_index))
             {
-                cout << " - cant find tx_out for ouput: " <<   output_index.pubkey << endl;
+                cout << " - cant find tx_out for ouput: " <<   output_data.pubkey << endl;
                 continue;
             }
 
             cout << ", " << cryptonote::print_money(found_output.amount)
+                 << ", out_i: " << output_index
                  << endl;
 
             ++count;

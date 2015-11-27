@@ -138,8 +138,12 @@ namespace xmreg
     bool
     MicroCore::find_output_in_tx(const transaction& tx,
                                  const public_key& output_pubkey,
-                                 tx_out& out)
+                                 tx_out& out,
+                                 size_t& output_index)
     {
+
+        size_t idx {0};
+
         // search in the ouputs for an output which
         // public key matches to what we want
         auto it = std::find_if(tx.vout.begin(), tx.vout.end(),
@@ -148,6 +152,8 @@ namespace xmreg
                                    const txout_to_key& tx_in_to_key
                                            = boost::get<txout_to_key>(o.target);
 
+                                   ++idx;
+
                                    return tx_in_to_key.key == output_pubkey;
                                });
 
@@ -155,6 +161,8 @@ namespace xmreg
         {
             // we found the desired public key
             out = *it;
+            output_index = idx;
+
             return true;
         }
 
@@ -216,11 +224,15 @@ namespace xmreg
 
             tx_out found_out;
 
-            if (find_output_in_tx(tx, output_pubkey, found_out))
+            // we dont need here output_index
+            size_t output_index;
+
+            if (find_output_in_tx(tx, output_pubkey, found_out, output_index))
             {
                 // we found the desired public key
                 tx_hash = get_transaction_hash(tx);
                 tx_found = tx;
+
                 return true;
             }
 

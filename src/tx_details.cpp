@@ -143,6 +143,66 @@ namespace xmreg
     }
 
 
+
+    /**
+     * Check if given output (specified by output_index)
+     * belongs is ours based
+     * on our private view key and public spend key
+     */
+    bool
+    is_output_ours(const size_t& output_index,
+                   const transaction& tx,
+                   const secret_key& private_view_key,
+                   const public_key& public_spend_key)
+    {
+        // get transaction's public key
+        public_key pub_tx_key = get_tx_pub_key_from_extra(tx);
+
+        // check if transaction has valid public key
+        // if no, then skip
+        if (pub_tx_key == null_pkey)
+        {
+            return false;
+        }
+
+        // public transaction key is combined with our viewkey
+        // to create, so called, derived key.
+        key_derivation derivation;
+
+        if (!generate_key_derivation(pub_tx_key, private_view_key, derivation))
+        {
+            cerr << "Cant get dervied key for: "  << "\n"
+                 << "pub_tx_key: " << private_view_key << " and "
+                 << "prv_view_key" << private_view_key << endl;
+
+            return false;
+        }
+
+
+        // get the tx output public key
+        // that normally would be generated for us,
+        // if someone had sent us some xmr.
+        public_key pubkey;
+
+        derive_public_key(derivation,
+                          output_index,
+                          public_spend_key,
+                          pubkey);
+
+        // get tx output public key
+        const txout_to_key tx_out_to_key
+                = boost::get<txout_to_key>(tx.vout[output_index].target);
+
+
+        if (tx_out_to_key.key == pubkey)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
 }
 
 template<>
