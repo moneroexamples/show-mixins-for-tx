@@ -161,7 +161,9 @@ namespace xmreg
         {
             // we found the desired public key
             out = *it;
-            output_index = idx;
+            output_index = idx > 0 ? idx - 1 : idx;
+
+            //cout << idx << " " << output_index << endl;
 
             return true;
         }

@@ -172,7 +172,7 @@ namespace xmreg
         if (!generate_key_derivation(pub_tx_key, private_view_key, derivation))
         {
             cerr << "Cant get dervied key for: "  << "\n"
-                 << "pub_tx_key: " << private_view_key << " and "
+                 << "pub_tx_key: " << pub_tx_key  << " and "
                  << "prv_view_key" << private_view_key << endl;
 
             return false;
@@ -188,6 +188,8 @@ namespace xmreg
                           output_index,
                           public_spend_key,
                           pubkey);
+
+        //cout << "\n" << tx.vout.size() << " " << output_index << endl;
 
         // get tx output public key
         const txout_to_key tx_out_to_key

@@ -2,7 +2,10 @@
 #include "src/CmdLineOptions.h"
 #include "src/tools.h"
 
+#include "ext/format.h"
+
 using namespace std;
+using namespace fmt;
 
 using xmreg::operator<<;
 using boost::filesystem::path;
@@ -48,16 +51,13 @@ int main(int ac, const char* av[]) {
         return 1;
     }
 
-    crypto::secret_key prv_view_key;
+    crypto::secret_key private_view_key;
     cryptonote::account_public_address address;
 
     if (viewkey_opt && address_opt)
     {
-        // string viewkey_str = viewkey_opt ? *viewkey_opt : "1ddabaa51cea5f6d9068728dc08c7ffaefe39a7a4b5f39fa8a976ecbe2cb520a";
-        // string address_str = address_opt ? *address_opt : "48daf1rG3hE1Txapcsxh6WXNe9MLNKtu7W7tKTivtSoVLHErYzvdcpea2nSTgGkz66RFP4GKVAsTV14v6G3oddBTHfxP6tU";
-
-        // parse string representing given private viewkey
-        if (!xmreg::parse_str_secret_key(*viewkey_opt, prv_view_key))
+         // parse string representing given private viewkey
+        if (!xmreg::parse_str_secret_key(*viewkey_opt, private_view_key))
         {
             cerr << "Cant parse view key: " << *viewkey_opt << endl;
             return 1;
@@ -82,21 +82,10 @@ int main(int ac, const char* av[]) {
         return 1;
     }
 
-    cout << "Blockchain path: " << blockchain_path << endl;
+    print("Blockchain path      : {}\n", blockchain_path);
 
     // enable basic monero log output
     xmreg::enable_monero_log();
-
-
-    cout << "\n"
-         << "tx_hash              : " << tx_hash << endl;
-
-    if (VIEWKEY_AND_ADDRESS_GIVEN)
-    {
-        // lets check our keys
-        cout << "private view key : " << prv_view_key << "\n"
-             << "address          : " << address << "\n" << endl;
-    }
 
     // create instance of our MicroCore
     xmreg::MicroCore mcore;
@@ -107,6 +96,17 @@ int main(int ac, const char* av[]) {
         cerr << "Error accessing blockchain." << endl;
         return 1;
     }
+
+
+    print("\n\ntx hash              : {}\n\n", tx_hash);
+
+    if (VIEWKEY_AND_ADDRESS_GIVEN)
+    {
+        // lets check our keys
+        print("private view key : {}\n", private_view_key);
+        print("address          : {}\n\n\n", address);
+    }
+
 
     // get the high level cryptonote::Blockchain object to interact
     // with the blockchain lmdb database
@@ -132,16 +132,19 @@ int main(int ac, const char* av[]) {
                 = boost::get<cryptonote::txin_to_key>(tx_in);
 
 
-        cout << "Input's Key image: " << tx_in_to_key.k_image
-             << ", amount: " << cryptonote::print_money(tx_in_to_key.amount) << endl;
-
+        print("Input's Key image: {}, xmr: {:0.4f}\n",
+              tx_in_to_key.k_image,
+              xmreg::get_xmr(tx_in_to_key.amount));
 
         // get absolute offsets of mixins
         std::vector<uint64_t> absolute_offsets
-                = cryptonote::relative_output_offsets_to_absolute(tx_in_to_key.key_offsets);
+                = cryptonote::relative_output_offsets_to_absolute(
+                        tx_in_to_key.key_offsets);
 
         std::vector<cryptonote::output_data_t> outputs;
-        core_storage.get_db().get_output_key(tx_in_to_key.amount, absolute_offsets, outputs);
+        core_storage.get_db().get_output_key(tx_in_to_key.amount,
+                                             absolute_offsets,
+                                             outputs);
 
         size_t count = 0;
 
@@ -156,23 +159,22 @@ int main(int ac, const char* av[]) {
             }
             else
             {
-                output_data = core_storage.get_db().get_output_key(tx_in_to_key.amount, i);
+                output_data = core_storage.get_db().get_output_key(
+                        tx_in_to_key.amount, i);
             }
 
 
+            // find tx_hash with given output
             crypto::hash tx_hash;
             cryptonote::transaction tx_found;
 
-            // find tx_hash with given output
             if (!mcore.get_tx_hash_from_output_pubkey(
                     output_data.pubkey,
                     output_data.height,
                     tx_hash, tx_found))
             {
-                cout << " - cant find tx_hash for ouput: "  <<   output_data.pubkey
-                     << ", mixin no: " << count + 1
-                     << ", block height: " << output_data.height << "\n"
-                     << " ... skiping" << endl;
+                print("- cant find tx_hash for ouput: {}, mixin no: {}, blk: {}\n",
+                      output_data.pubkey, count + 1, output_data.height);
 
                 continue;
             }
@@ -188,24 +190,32 @@ int main(int ac, const char* av[]) {
                                          found_output,
                                          output_index))
             {
-                cout << " - cant find tx_out for ouput: " <<   output_data.pubkey
-                     << ", mixin no: " << count + 1
-                     << ", block height: " << output_data.height << "\n"
-                     << " ... skiping" << endl;
+                print("- cant find tx_out for ouput: {}, mixin no: {}, blk: {}\n",
+                      output_data.pubkey, count + 1, output_data.height);
 
                 continue;
             }
 
+            print("\n - mixin no: {}, block height: {}",
+                  count + 1, output_data.height);
 
+            bool is_ours {false};
 
-            cout << " - mixin no: " << count + 1
-                 << ", block height: " << output_data.height << "\n"
-                 << "   - output's pubkey: " << output_data.pubkey
-                 << ", out_i: " << output_index << endl;
+            if (VIEWKEY_AND_ADDRESS_GIVEN)
+            {
+                is_ours = xmreg::is_output_ours(output_index, tx_found,
+                                                private_view_key,
+                                                address.m_spend_public_key);
 
-            cout << "   - in tx with hash: " << tx_hash
-                 << ", " << cryptonote::print_money(found_output.amount) << " xmr"
-                 << endl;
+                Color c  = is_ours ? Color::GREEN : Color::RED;
+
+                print(", ours: "); print_colored(c, "{}", is_ours);
+            }
+
+            print("\n  - output's pubkey: {}\n", output_data.pubkey);
+
+            print("  - in tx with hash: {}, out_i: {:03d}, xmr: {:0.4f}\n",
+                  tx_hash, output_index, xmreg::get_xmr(found_output.amount));
 
             ++count;
         }

@@ -95,6 +95,13 @@ namespace xmreg
     estimate_bc_height(const string& date, const char* format = "%Y-%m-%d");
 
 
+    inline double
+    get_xmr(uint64_t core_amount)
+    {
+        return  static_cast<double>(core_amount) / 1e12;
+    }
+
+
 
 }
 
