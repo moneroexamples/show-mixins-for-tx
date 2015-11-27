@@ -159,9 +159,6 @@ int main(int ac, const char* av[]) {
                 output_data = core_storage.get_db().get_output_key(tx_in_to_key.amount, i);
             }
 
-            cout << " - mixin no: " << count + 1 << ", block height: " << output_data.height << "\n"
-                 << "   - output's pubkey: " << output_data.pubkey << endl;
-
 
             crypto::hash tx_hash;
             cryptonote::transaction tx_found;
@@ -172,23 +169,42 @@ int main(int ac, const char* av[]) {
                     output_data.height,
                     tx_hash, tx_found))
             {
-                cout << " - cant find tx_hash for ouput: " <<   output_data.pubkey << endl;
+                cout << " - cant find tx_hash for ouput: "  <<   output_data.pubkey
+                     << ", mixin no: " << count + 1
+                     << ", block height: " << output_data.height << "\n"
+                     << " ... skiping" << endl;
+
                 continue;
             }
 
-            cout << "   - in tx with hash: " << tx_hash;
 
+            // find output in a given transaction
+            // basted on its public key
             cryptonote::tx_out found_output;
             size_t output_index;
 
-            if (!mcore.find_output_in_tx(tx_found, output_data.pubkey, found_output, output_index))
+            if (!mcore.find_output_in_tx(tx_found,
+                                         output_data.pubkey,
+                                         found_output,
+                                         output_index))
             {
-                cout << " - cant find tx_out for ouput: " <<   output_data.pubkey << endl;
+                cout << " - cant find tx_out for ouput: " <<   output_data.pubkey
+                     << ", mixin no: " << count + 1
+                     << ", block height: " << output_data.height << "\n"
+                     << " ... skiping" << endl;
+
                 continue;
             }
 
-            cout << ", " << cryptonote::print_money(found_output.amount)
-                 << ", out_i: " << output_index
+
+
+            cout << " - mixin no: " << count + 1
+                 << ", block height: " << output_data.height << "\n"
+                 << "   - output's pubkey: " << output_data.pubkey
+                 << ", out_i: " << output_index << endl;
+
+            cout << "   - in tx with hash: " << tx_hash
+                 << ", " << cryptonote::print_money(found_output.amount) << " xmr"
                  << endl;
 
             ++count;
