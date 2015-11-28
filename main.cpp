@@ -98,7 +98,7 @@ int main(int ac, const char* av[]) {
     }
 
 
-    print("\n\ntx hash              : {}\n\n", tx_hash);
+    print("\n\ntx hash          : {}\n\n", tx_hash);
 
     if (VIEWKEY_AND_ADDRESS_GIVEN)
     {
