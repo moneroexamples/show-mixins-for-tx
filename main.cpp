@@ -203,6 +203,8 @@ int main(int ac, const char* av[]) {
 
             if (VIEWKEY_AND_ADDRESS_GIVEN)
             {
+                // check if the given mixin's output is ours based
+                // on the view key and public spend key from the address
                 is_ours = xmreg::is_output_ours(output_index, tx_found,
                                                 private_view_key,
                                                 address.m_spend_public_key);
