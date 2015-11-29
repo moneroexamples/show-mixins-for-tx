@@ -4,9 +4,9 @@ No tool nor blockchain website exist that shows the mixin outputs used in the in
 advantages of [Monero](https://getmonero.org/) over other cryptocurrencies.
 
 In this example, this problem is addressed. Specifically, a C++ program called
-`showmixins` is developed. The program prints out all mixins used in a given transaction. In addtion,
+`showmixins` is developed. The program prints out all mixins used in a given transaction. In addition,
 if monero address and privet view key are provided,
-the true mixing will be identified.
+the true mixins will be identified.
 
 ## Pre-requisites
 
