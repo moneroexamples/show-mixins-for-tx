@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Monero Examples by moneroexamples</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Monero Examples</h1>
+      <h2 class="project-tagline">show-mixins-for-tx</h2>
+      <a href="https://github.com/moneroexamples/show-mixins-for-tx" class="btn">View on GitHub</a>
+      <a href="https://github.com/moneroexamples/show-mixins-for-tx/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/moneroexamples/show-mixins-for-tx/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="show-mixins-in-each-transaction" class="anchor" href="#show-mixins-in-each-transaction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Show mixins in each transaction</h1>
+
+<p>No tool nor blockchain website exist that shows the mixin outputs used in the inputs of a given transaction.  This is a shame, as mixins represent one of the main
+advantages of <a href="https://getmonero.org/">Monero</a> over other cryptocurrencies.</p>
+
+<p>In this example, this problem is addressed. Specifically, a C++ program called
+<code>showmixins</code> is developed. The program prints out all mixins used in a given transaction. In addition,
+if monero address and privet view key are provided,
+the true mixins will be identified.</p>
+
+<h2>
+<a id="pre-requisites" class="anchor" href="#pre-requisites" aria-hidden="true"><span class="octicon octicon-link"></span></a>Pre-requisites</h2>
+
+<p>Everything here was done and tested
+on Ubuntu 14.04 x86_64 and Ubuntu 15.10 x86_64.</p>
+
+<p>Instruction for Monero compilation:</p>
+
+<ul>
+<li><a href="http://moneroexamples.github.io/compile-monero-ubuntu/">Ubuntu 14.04 x86_64</a></li>
+<li><a href="http://moneroexamples.github.io/compile-monero-ubuntu-1510/">Ubuntu 15.10 x86_64</a></li>
+</ul>
+
+<p>Monero source code compilation and setup are same as
+<a href="http://moneroexamples.github.io/access-blockchain-in-cpp/">here</a>.</p>
+
+<h2>
+<a id="c-code" class="anchor" href="#c-code" aria-hidden="true"><span class="octicon octicon-link"></span></a>C++ code</h2>
+
+<p>The main part of the example is main.cpp.</p>
+
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">int</span> <span class="pl-en">main</span>(<span class="pl-k">int</span> ac, <span class="pl-k">const</span> <span class="pl-k">char</span>* av[]) {
+
+    <span class="pl-c">// get command line options</span>
+    xmreg::CmdLineOptions opts {ac, av};
+
+    <span class="pl-k">auto</span> help_opt = opts.<span class="pl-smi">get_option</span>&lt;<span class="pl-k">bool</span>&gt;(<span class="pl-s"><span class="pl-pds">"</span>help<span class="pl-pds">"</span></span>);
+
+    <span class="pl-c">// if help was chosen, display help text and finish</span>
+    <span class="pl-k">if</span> (*help_opt)
+    {
+        <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+    }
+
+
+    <span class="pl-c">// flag indicating if viewkey and address were</span>
+    <span class="pl-c">// given by the user</span>
+    <span class="pl-k">bool</span> VIEWKEY_AND_ADDRESS_GIVEN {<span class="pl-c1">false</span>};
+
+    <span class="pl-c">// get other options</span>
+    <span class="pl-k">auto</span> tx_hash_opt = opts.<span class="pl-smi">get_option</span>&lt;string&gt;(<span class="pl-s"><span class="pl-pds">"</span>txhash<span class="pl-pds">"</span></span>);
+    <span class="pl-k">auto</span> viewkey_opt = opts.<span class="pl-smi">get_option</span>&lt;string&gt;(<span class="pl-s"><span class="pl-pds">"</span>viewkey<span class="pl-pds">"</span></span>);
+    <span class="pl-k">auto</span> address_opt = opts.<span class="pl-smi">get_option</span>&lt;string&gt;(<span class="pl-s"><span class="pl-pds">"</span>address<span class="pl-pds">"</span></span>);
+    <span class="pl-k">auto</span> bc_path_opt = opts.<span class="pl-smi">get_option</span>&lt;string&gt;(<span class="pl-s"><span class="pl-pds">"</span>bc-path<span class="pl-pds">"</span></span>);
+
+
+    <span class="pl-c">// get the program command line options, or</span>
+    <span class="pl-c">// some default values for quick check</span>
+    string tx_hash_str = tx_hash_opt ? *tx_hash_opt : <span class="pl-s"><span class="pl-pds">"</span>09d9e8eccf82b3d6811ed7005102caf1b605f325cf60ed372abeb4a67d956fff<span class="pl-pds">"</span></span>;
+
+
+    crypto::hash tx_hash;
+
+    <span class="pl-k">if</span> (!<span class="pl-c1">xmreg::parse_str_secret_key</span>(tx_hash_str, tx_hash))
+    {
+        cerr &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span>Cant parse tx hash: <span class="pl-pds">"</span></span> &lt;&lt; tx_hash_str &lt;&lt; endl;
+        <span class="pl-k">return</span> <span class="pl-c1">1</span>;
+    }
+
+    crypto::secret_key private_view_key;
+    cryptonote::account_public_address address;
+
+    <span class="pl-k">if</span> (viewkey_opt &amp;&amp; address_opt)
+    {
+         <span class="pl-c">// parse string representing given private viewkey</span>
+        <span class="pl-k">if</span> (!<span class="pl-c1">xmreg::parse_str_secret_key</span>(*viewkey_opt, private_view_key))
+        {
+            cerr &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span>Cant parse view key: <span class="pl-pds">"</span></span> &lt;&lt; *viewkey_opt &lt;&lt; endl;
+            <span class="pl-k">return</span> <span class="pl-c1">1</span>;
+        }
+
+        <span class="pl-c">// parse string representing given monero address</span>
+        <span class="pl-k">if</span> (!<span class="pl-c1">xmreg::parse_str_address</span>(*address_opt,  address))
+        {
+            cerr &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span>Cant parse address: <span class="pl-pds">"</span></span> &lt;&lt; *address_opt &lt;&lt; endl;
+            <span class="pl-k">return</span> <span class="pl-c1">1</span>;
+        }
+
+        VIEWKEY_AND_ADDRESS_GIVEN = <span class="pl-c1">true</span>;
+    }
+
+
+    path blockchain_path;
+
+    <span class="pl-k">if</span> (!<span class="pl-c1">xmreg::get_blockchain_path</span>(bc_path_opt, blockchain_path))
+    {
+        <span class="pl-c">// if problem obtaining blockchain path, finish.</span>
+        <span class="pl-k">return</span> <span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Blockchain path      : {}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, blockchain_path);
+
+    <span class="pl-c">// enable basic monero log output</span>
+    <span class="pl-c1">xmreg::enable_monero_log</span>();
+
+    <span class="pl-c">// create instance of our MicroCore</span>
+    xmreg::MicroCore mcore;
+
+    <span class="pl-c">// initialize the core using the blockchain path</span>
+    <span class="pl-k">if</span> (!mcore.<span class="pl-c1">init</span>(blockchain_path.<span class="pl-c1">string</span>()))
+    {
+        cerr &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span>Error accessing blockchain.<span class="pl-pds">"</span></span> &lt;&lt; endl;
+        <span class="pl-k">return</span> <span class="pl-c1">1</span>;
+    }
+
+
+    <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n\n</span>tx hash          : {}<span class="pl-cce">\n\n</span><span class="pl-pds">"</span></span>, tx_hash);
+
+    <span class="pl-k">if</span> (VIEWKEY_AND_ADDRESS_GIVEN)
+    {
+        <span class="pl-c">// lets check our keys</span>
+        <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>private view key : {}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, private_view_key);
+        <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>address          : {}<span class="pl-cce">\n\n\n</span><span class="pl-pds">"</span></span>, address);
+    }
+
+
+    <span class="pl-c">// get the high level cryptonote::Blockchain object to interact</span>
+    <span class="pl-c">// with the blockchain lmdb database</span>
+    cryptonote::Blockchain&amp; core_storage = mcore.<span class="pl-c1">get_core</span>();
+
+    cryptonote::transaction tx;
+
+    <span class="pl-k">try</span>
+    {
+        <span class="pl-c">// get transaction with given hash</span>
+        tx = core_storage.<span class="pl-c1">get_db</span>().<span class="pl-c1">get_tx</span>(tx_hash);
+    }
+    <span class="pl-k">catch</span> (<span class="pl-k">const</span> std::exception&amp; e)
+    {
+        cerr &lt;&lt; e.<span class="pl-c1">what</span>() &lt;&lt; endl;
+        <span class="pl-k">return</span> <span class="pl-c1">false</span>;
+    }
+
+    <span class="pl-k">for</span> (<span class="pl-k">const</span> cryptonote::txin_v&amp; tx_in: tx.<span class="pl-smi">vin</span>)
+    {
+        <span class="pl-c">// get tx input key</span>
+        <span class="pl-k">const</span> cryptonote::txin_to_key&amp; tx_in_to_key
+                = boost::get&lt;cryptonote::txin_to_key&gt;(tx_in);
+
+
+        <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Input's Key image: {}, xmr: {:0.4f}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,
+              tx_in_to_key.<span class="pl-smi">k_image</span>,
+              <span class="pl-c1">xmreg::get_xmr</span>(tx_in_to_key.<span class="pl-smi">amount</span>));
+
+        <span class="pl-c">// get absolute offsets of mixins</span>
+        std::vector&lt;<span class="pl-c1">uint64_t</span>&gt; absolute_offsets
+                = <span class="pl-c1">cryptonote::relative_output_offsets_to_absolute</span>(
+                        tx_in_to_key.<span class="pl-smi">key_offsets</span>);
+
+        std::vector&lt;cryptonote::<span class="pl-c1">output_data_t</span>&gt; outputs;
+        core_storage.<span class="pl-c1">get_db</span>().<span class="pl-c1">get_output_key</span>(tx_in_to_key.<span class="pl-smi">amount</span>,
+                                             absolute_offsets,
+                                             outputs);
+
+        <span class="pl-c1">size_t</span> count = <span class="pl-c1">0</span>;
+
+        <span class="pl-k">for</span> (<span class="pl-k">const</span> <span class="pl-c1">uint64_t</span>&amp; i: absolute_offsets)
+        {
+            cryptonote::<span class="pl-c1">output_data_t</span> output_data;
+
+            <span class="pl-c">// get tx hash and output index for output</span>
+            <span class="pl-k">if</span> (count &lt; outputs.<span class="pl-c1">size</span>())
+            {
+                output_data = outputs.<span class="pl-c1">at</span>(count);
+            }
+            <span class="pl-k">else</span>
+            {
+                output_data = core_storage.<span class="pl-c1">get_db</span>().<span class="pl-c1">get_output_key</span>(
+                        tx_in_to_key.<span class="pl-smi">amount</span>, i);
+            }
+
+
+            <span class="pl-c">// find tx_hash with given output</span>
+            crypto::hash tx_hash;
+            cryptonote::transaction tx_found;
+
+            <span class="pl-k">if</span> (!mcore.<span class="pl-c1">get_tx_hash_from_output_pubkey</span>(
+                    output_data.<span class="pl-smi">pubkey</span>,
+                    output_data.<span class="pl-smi">height</span>,
+                    tx_hash, tx_found))
+            {
+                <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>- cant find tx_hash for ouput: {}, mixin no: {}, blk: {}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,
+                      output_data.<span class="pl-smi">pubkey</span>, count + <span class="pl-c1">1</span>, output_data.<span class="pl-smi">height</span>);
+
+                <span class="pl-k">continue</span>;
+            }
+
+
+            <span class="pl-c">// find output in a given transaction</span>
+            <span class="pl-c">// basted on its public key</span>
+            cryptonote::tx_out found_output;
+            <span class="pl-c1">size_t</span> output_index;
+
+            <span class="pl-k">if</span> (!mcore.<span class="pl-c1">find_output_in_tx</span>(tx_found,
+                                         output_data.<span class="pl-smi">pubkey</span>,
+                                         found_output,
+                                         output_index))
+            {
+                <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>- cant find tx_out for ouput: {}, mixin no: {}, blk: {}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,
+                      output_data.<span class="pl-smi">pubkey</span>, count + <span class="pl-c1">1</span>, output_data.<span class="pl-smi">height</span>);
+
+                <span class="pl-k">continue</span>;
+            }
+
+            <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span> - mixin no: {}, block height: {}<span class="pl-pds">"</span></span>,
+                  count + <span class="pl-c1">1</span>, output_data.<span class="pl-smi">height</span>);
+
+            <span class="pl-k">bool</span> is_ours {<span class="pl-c1">false</span>};
+
+            <span class="pl-k">if</span> (VIEWKEY_AND_ADDRESS_GIVEN)
+            {
+                <span class="pl-c">// check if the given mixin's output is ours based</span>
+                <span class="pl-c">// on the view key and public spend key from the address</span>
+                is_ours = <span class="pl-c1">xmreg::is_output_ours</span>(output_index, tx_found,
+                                                private_view_key,
+                                                address.<span class="pl-smi">m_spend_public_key</span>);
+
+                Color c  = is_ours ? Color::GREEN : Color::RED;
+
+                <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>, ours: <span class="pl-pds">"</span></span>); <span class="pl-c1">print_colored</span>(c, <span class="pl-s"><span class="pl-pds">"</span>{}<span class="pl-pds">"</span></span>, is_ours);
+            }
+
+            <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span>  - output's pubkey: {}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, output_data.<span class="pl-smi">pubkey</span>);
+
+            <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>  - in tx with hash: {}, out_i: {:03d}, xmr: {:0.4f}<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,
+                  tx_hash, output_index, <span class="pl-c1">xmreg::get_xmr</span>(found_output.<span class="pl-smi">amount</span>));
+
+            ++count;
+        }
+
+        cout &lt;&lt; endl;
+    }
+
+    cout &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span>End of program.<span class="pl-pds">"</span></span> &lt;&lt; endl;
+
+    <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+}</pre></div>
+
+<h2>
+<a id="program-options" class="anchor" href="#program-options" aria-hidden="true"><span class="octicon octicon-link"></span></a>Program options</h2>
+
+<pre><code>./showmixins -h
+showmixins, shows mixin outputs used for each input in a given transaction:
+  -h [ --help ] [=arg(=1)] (=0) produce help message
+  -t [ --txhash ] arg           transaction hash
+  -v [ --viewkey ] arg          private view key string
+  -a [ --address ] arg          monero address string
+  -b [ --bc-path ] arg          path to lmdb blockchain
+</code></pre>
+
+<h2>
+<a id="example-input-and-output-1" class="anchor" href="#example-input-and-output-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example input and output 1</h2>
+
+<p>Just a transaction hash given, without corresponding address and view key.</p>
+
+<div class="highlight highlight-source-shell"><pre>./showmixins -t 49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe</pre></div>
+
+<p>Output:</p>
+
+<div class="highlight highlight-source-shell"><pre>tx <span class="pl-c1">hash</span>          <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe<span class="pl-k">&gt;</span>
+
+Input<span class="pl-s"><span class="pl-pds">'</span>s Key image: &lt;54802347b456a6dd632aea85cf970b09244107b6d5cea924feb7deafdc37cf9d&gt;, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 1, block height: 67326</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>9f3145e43d7e0e3bbeb57d5a2fafef952d315bac341e507645621ed86efd<span class="pl-k">1155&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>21885df01a25c548ddc0bb26dacba7fcc63f8c2810e193d4048fccb9791b1b<span class="pl-k">38&gt;</span>, out_i: 175, xmr: 1.0000
+
+ - mixin no: 2, block height: 143814
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;eeaa6f0a7cc1e975815743f12434b81a921f96c650fe269159dae20ef4077061&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;56aabcd79cd2c063bd40636a2ca69e9933c95e93ec3ae15e93beafbae0293a83&gt;, out_i: 039, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 3, block height: 153000</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>ad89c7b09b1f02ad872270510ccb96d24252170cd01bbbb45b307daf89e7ee5c<span class="pl-k">&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>0daef7d911fc62ae50ee0134cb247fcf97061091fcbb1fcf4d96d1c9cdb8a<span class="pl-k">969&gt;</span>, out_i: 036, xmr: 1.0000
+
+ - mixin no: 4, block height: 168055
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;623eba3d75cc706f34b62c50cc212267e86f50df123741f1deea039da04b6a4e&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;31aa16467530036597f50f07fc30c3c8f8a8df55b19de831fcf3d2c18a951e1f&gt;, out_i: 039, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 5, block height: 277037</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>f8f1ac2151024887959891d6021d84e6289a02b8743b84f941df15e387fc7c<span class="pl-k">95&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>fc27fd68ca723784c7b9e0459cc9a53779bd1bd317f5a255114d897ecbed<span class="pl-k">7464&gt;</span>, out_i: 202, xmr: 1.0000
+
+ - mixin no: 6, block height: 539756
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;b81195393cc497f4deff5dbd9f6fc04d4c492e6c523aadb40dbd29cdf38d4662&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;6143d5d3f5ada27c1eddc46176607b67f492b1e9427757174e3e3215eeadaf63&gt;, out_i: 049, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 7, block height: 844912</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>852e2f8c919988294a15a65a4be8adff70e14c5907b0fee7e2ee005c134345e<span class="pl-k">4&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>27003d209ae8854a72735e0cb14f46879dafbac65cf593fb880926a2a674efce<span class="pl-k">&gt;</span>, out_i: 002, xmr: 1.0000</pre></div>
+
+<h2>
+<a id="example-input-and-output-2" class="anchor" href="#example-input-and-output-2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example input and output 2</h2>
+
+<p>Transaction hash given along with the corresponding address and view key.</p>
+
+<div class="highlight highlight-source-shell"><pre>./showmixins -a 42SLnbz1Ym9YtU3zHwKbQL8hXnGhtQ23BdnTGBtWwj6AXHSdEqRikDbM3wQxDWMhyCKZbQ9TfFh9N1SvHMXT81kK7senkME -v bdee822e89095833315925543a6d5b2a2a4418815cdfb3d0e91722d9c0b79501 -t 49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe</pre></div>
+
+<p>Result:</p>
+
+<div class="highlight highlight-source-shell"><pre>tx <span class="pl-c1">hash</span>          <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe<span class="pl-k">&gt;</span>
+
+private view key <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>bdee822e89095833315925543a6d5b2a2a4418815cdfb3d0e91722d9c0b<span class="pl-k">79501&gt;</span>
+address          <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>42SLnbz1Ym9YtU3zHwKbQL8hXnGhtQ23BdnTGBtWwj6AXHSdEqRikDbM3wQxDWMhyCKZbQ9TfFh9N1SvHMXT81kK7senkME<span class="pl-k">&gt;</span>
+
+
+Input<span class="pl-s"><span class="pl-pds">'</span>s Key image: &lt;54802347b456a6dd632aea85cf970b09244107b6d5cea924feb7deafdc37cf9d&gt;, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 1, block height: 67326, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>9f3145e43d7e0e3bbeb57d5a2fafef952d315bac341e507645621ed86efd<span class="pl-k">1155&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>21885df01a25c548ddc0bb26dacba7fcc63f8c2810e193d4048fccb9791b1b<span class="pl-k">38&gt;</span>, out_i: 175, xmr: 1.0000
+
+ - mixin no: 2, block height: 143814, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;eeaa6f0a7cc1e975815743f12434b81a921f96c650fe269159dae20ef4077061&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;56aabcd79cd2c063bd40636a2ca69e9933c95e93ec3ae15e93beafbae0293a83&gt;, out_i: 039, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 3, block height: 153000, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>ad89c7b09b1f02ad872270510ccb96d24252170cd01bbbb45b307daf89e7ee5c<span class="pl-k">&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>0daef7d911fc62ae50ee0134cb247fcf97061091fcbb1fcf4d96d1c9cdb8a<span class="pl-k">969&gt;</span>, out_i: 036, xmr: 1.0000
+
+ - mixin no: 4, block height: 168055, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;623eba3d75cc706f34b62c50cc212267e86f50df123741f1deea039da04b6a4e&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;31aa16467530036597f50f07fc30c3c8f8a8df55b19de831fcf3d2c18a951e1f&gt;, out_i: 039, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 5, block height: 277037, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>f8f1ac2151024887959891d6021d84e6289a02b8743b84f941df15e387fc7c<span class="pl-k">95&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>fc27fd68ca723784c7b9e0459cc9a53779bd1bd317f5a255114d897ecbed<span class="pl-k">7464&gt;</span>, out_i: 202, xmr: 1.0000
+
+ - mixin no: 6, block height: 539756, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;b81195393cc497f4deff5dbd9f6fc04d4c492e6c523aadb40dbd29cdf38d4662&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;6143d5d3f5ada27c1eddc46176607b67f492b1e9427757174e3e3215eeadaf63&gt;, out_i: 049, xmr: 1.0000</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 7, block height: 844912, ours: true</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>852e2f8c919988294a15a65a4be8adff70e14c5907b0fee7e2ee005c134345e<span class="pl-k">4&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>27003d209ae8854a72735e0cb14f46879dafbac65cf593fb880926a2a674efce<span class="pl-k">&gt;</span>, out_i: 002, xmr: 1.0000</pre></div>
+
+<h2>
+<a id="example-input-and-output-2-1" class="anchor" href="#example-input-and-output-2-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example input and output 2</h2>
+
+<p>Transaction hash given along with the corresponding address and view key.</p>
+
+<div class="highlight highlight-source-shell"><pre>./showmixins -a 41vEA7Ye8Bpeda6g59v5t46koWrVn2PNgEKgzquJjmiKCFTsh9gajr8J3pad49rqu581TAtFGCH9CYTCkYrCpuWUG9GkgeB -v fed77158ec692fe9eb951f6aeb22c3bda16fe8926c1aac13a5651a9c27f34309  -t 33fbb14119e1777f6577b08188031f8b60e448cc23135d37bda8aee6b1d97d97</pre></div>
+
+<div class="highlight highlight-source-shell"><pre>tx <span class="pl-c1">hash</span>          <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>33fbb14119e1777f6577b08188031f8b60e448cc23135d37bda8aee6b1d97d<span class="pl-k">97&gt;</span>
+
+private view key <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>fed77158ec692fe9eb951f6aeb22c3bda16fe8926c1aac13a5651a9c27f<span class="pl-k">34309&gt;</span>
+address          <span class="pl-c1">:</span> <span class="pl-k">&lt;</span>41vEA7Ye8Bpeda6g59v5t46koWrVn2PNgEKgzquJjmiKCFTsh9gajr8J3pad49rqu581TAtFGCH9CYTCkYrCpuWUG9GkgeB<span class="pl-k">&gt;</span>
+
+
+Input<span class="pl-s"><span class="pl-pds">'</span>s Key image: &lt;059c860753ac88c1ee2abd7531169ebd636b0f9026ee1d288590f0eaf291cfce&gt;, xmr: 0.0700</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 1, block height: 100587, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>899dbdf74d92ab761d43b9e64881a563d233c352284246dbad856164bce10c<span class="pl-k">56&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>587078cf170458879dfa0f36f1acb5ab8aa3a4757d3159e73364cc81a2604d<span class="pl-k">55&gt;</span>, out_i: 087, xmr: 0.0700
+
+ - mixin no: 2, block height: 196153, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;40cb6dfca1486763fdeb78589b8497e14b0aace19b8042d0fb3b1605c0659ebf&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;d0b3a8cb3144efde755ff1f0a53da08141612a614c76b7045ab449a583dc6abc&gt;, out_i: 000, xmr: 0.0700</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 3, block height: 419000, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>1f4e5e32dfb1bf9e51e3858be87b8cdc20ca79b1507b51070cbac3fcf474c84a<span class="pl-k">&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>2e07b521ff7095e4b9c3458b8b406914e971a860182d63687fc9f7030d1598b<span class="pl-k">5&gt;</span>, out_i: 005, xmr: 0.0700
+
+ - mixin no: 4, block height: 442769, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;2c1bf7733129f520e24349f9da1c0dbadfe6faa40020ac4803d516bc2c654ee4&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;88639977921a2dbb7fa9a3d50aedadd49627957f3d726f47342255d26c9d6af1&gt;, out_i: 001, xmr: 0.0700</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 5, block height: 536199, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>099a1522e0c1686f6e7d3739c985949d113a228f297f61ebbcc3430e<span class="pl-k">77072047&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>1783b473caa464b96e2abea1ce6ef0f6047aecc69421b1e3f7677e329be<span class="pl-k">13340&gt;</span>, out_i: 001, xmr: 0.0700
+
+ - mixin no: 6, block height: 597457, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;6a893bb20ca12a2debb0bc4f6905962cf78a034b8c32cad241a1718fe9cda04d&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;bf22f3291dc7b7f3705a16af4dc725aded208bd63a34fd6df721ad55825ff7c0&gt;, out_i: 001, xmr: 0.0700</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 7, block height: 619035, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>5d898066818e39e9521457e317d930fde698c81c0199112025f68eef01d<span class="pl-k">12419&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>7db677dafa7a83ce6d056e6cf7b2631ac0376e873ef0c34eed4795b66cd3476a<span class="pl-k">&gt;</span>, out_i: 001, xmr: 0.0700
+
+ - mixin no: 8, block height: 629805, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;fc926f529076df29b38396fa8b505026e5b4c59717d675df6913146837c3d49a&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;94421fdf1fcd190d9f01ef27706ee3cf1a6de550522e0a41118f8a62e1dcad67&gt;, out_i: 001, xmr: 0.0700</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 9, block height: 719664, ours: false</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>3897f183edbc6863ad17c244e5f7847c53456ee6dd96ee0f7e8c69276355a<span class="pl-k">088&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>64f0cc93acbea3f387c6ecc6e863facf2a14a25eec15902e0eda2e466f4dd8b<span class="pl-k">9&gt;</span>, out_i: 001, xmr: 0.0700
+
+ - mixin no: 10, block height: 802102, ours: <span class="pl-c1">false</span>
+  - output<span class="pl-s"><span class="pl-pds">'</span>s pubkey: &lt;bb7357d4a834707e3e539b4d58522651103deceaaf2cfadffa4e834e7778fd89&gt;</span>
+<span class="pl-s">  - in tx with hash: &lt;0173c66a1fbd2a8b659e3e01ac4c82da1e9b45a0fac59ac566a9b13e51c90699&gt;, out_i: 001, xmr: 0.0700</span>
+<span class="pl-s"></span>
+<span class="pl-s"> - mixin no: 11, block height: 844908, ours: true</span>
+<span class="pl-s">  - output<span class="pl-pds">'</span></span>s pubkey: <span class="pl-k">&lt;</span>848a4a76a1d2652fa103ceea9bdd7d4c8a2fcd54cd7050648fa57bb<span class="pl-k">144239642&gt;</span>
+  - <span class="pl-k">in</span> tx with <span class="pl-c1">hash</span>: <span class="pl-k">&lt;</span>ce26c93d631ff7876134eeaeb574f6e9c791fe3eb816de16f68ee2138c9ccdbb<span class="pl-k">&gt;</span>, out_i: 001, xmr: 0.0700</pre></div>
+
+<h2>
+<a id="compile-this-example" class="anchor" href="#compile-this-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Compile this example</h2>
+
+<p>The dependencies are same as those for Monero, so I assume Monero compiles
+correctly. If so then to download and compile this example, the following
+steps can be executed:</p>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># download the source code</span>
+git clone https://github.com/moneroexamples/show-mixins-for-tx.git
+
+<span class="pl-c"># enter the downloaded sourced code folder</span>
+<span class="pl-c1">cd</span> show-mixins-for-tx
+
+<span class="pl-c"># create the makefile</span>
+cmake <span class="pl-c1">.</span>
+
+<span class="pl-c"># compile</span>
+make</pre></div>
+
+<p>After this, <code>showmixins</code> executable file should be present in access-blockchain-in-cpp
+folder. How to use it, can be seen in the above example outputs.</p>
+
+<h2>
+<a id="how-can-you-help" class="anchor" href="#how-can-you-help" aria-hidden="true"><span class="octicon octicon-link"></span></a>How can you help?</h2>
+
+<p>Constructive criticism, code and website edits are always good. They can be made through github.</p>
+
+<p>Some Monero are also welcome:</p>
+
+<pre><code>48daf1rG3hE1Txapcsxh6WXNe9MLNKtu7W7tKTivtSoVLHErYzvdcpea2nSTgGkz66RFP4GKVAsTV14v6G3oddBTHfxP6tU
+</code></pre>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/moneroexamples/show-mixins-for-tx">Monero Examples</a> is maintained by <a href="https://github.com/moneroexamples">moneroexamples</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
