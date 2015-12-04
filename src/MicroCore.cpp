@@ -144,6 +144,17 @@ namespace xmreg
 
         size_t idx {0};
 
+//
+//        cout << endl;
+//        cout << get_transaction_hash(tx) << ": " << endl;
+//
+//        for (const tx_out& o: tx.vout)
+//        {
+//            const txout_to_key& tx_in_to_key
+//                    = boost::get<txout_to_key>(o.target);
+//            cout << " - " << tx_in_to_key.key << " equal: "  << (output_pubkey == tx_in_to_key.key ) << endl;
+//        }
+
         // search in the ouputs for an output which
         // public key matches to what we want
         auto it = std::find_if(tx.vout.begin(), tx.vout.end(),

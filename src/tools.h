@@ -34,6 +34,40 @@ namespace xmreg
     namespace pt = boost::posix_time;
     namespace gt = boost::gregorian;
 
+
+
+    struct outputs_visitor
+    {
+        std::vector<crypto::public_key >& m_output_keys;
+
+        const Blockchain& m_bch;
+
+        outputs_visitor(std::vector<crypto::public_key>& output_keys, const Blockchain& bch) :
+                m_output_keys(output_keys), m_bch(bch)
+        {
+        }
+
+        bool handle_output(uint64_t unlock_time, const crypto::public_key &pubkey)
+        {
+            //check tx unlock time
+//            if (!m_bch.is_tx_spendtime_unlocked(unlock_time))
+//            {
+//                LOG_PRINT_L1("One of outputs for one of inputs has wrong tx.unlock_time = " << unlock_time);
+//                return false;
+//            }
+
+            m_output_keys.push_back(pubkey);
+
+            return true;
+        }
+    };
+
+
+
+
+
+
+
     template <typename T>
     bool
     parse_str_secret_key(const string& key_str, T& secret_key);
