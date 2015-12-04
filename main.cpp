@@ -165,11 +165,7 @@ int main(int ac, const char* av[]) {
                 output_data = outputs.at(count);
             }
 
-
-            //cout << "\nAbsolute offset: " << i << ", using output_at: " << output_at << endl;
-
-
-            // find tx_hash with given output
+           // find tx_hash with given output
             crypto::hash tx_hash;
             cryptonote::transaction tx_found;
 
@@ -207,7 +203,6 @@ int main(int ac, const char* av[]) {
             bool is_ours {false};
 
 
-
             // get global transaction index in the blockchain
             vector<uint64_t> out_global_indeces;
 
@@ -220,6 +215,7 @@ int main(int ac, const char* av[]) {
                 continue;
             }
 
+            // get the global index for the current output
             uint64_t global_out_idx = {0};
 
             if (output_index < out_global_indeces.size())
