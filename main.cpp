@@ -201,6 +201,25 @@ int main(int ac, const char* av[]) {
 
             bool is_ours {false};
 
+
+
+            vector<uint64_t> out_global_indeces;
+
+            if (!core_storage.get_tx_outputs_gindexs(
+                    cryptonote::get_transaction_hash(tx_found),
+                    out_global_indeces))
+            {
+                print("- cant find global indices for tx: {}\n", tx_hash);
+
+                continue;
+            }
+
+            for (auto& g_idx: out_global_indeces)
+            {
+                cout << g_idx << endl;
+            }
+
+
             if (VIEWKEY_AND_ADDRESS_GIVEN)
             {
                 // check if the given mixin's output is ours based
