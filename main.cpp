@@ -203,6 +203,7 @@ int main(int ac, const char* av[]) {
 
 
 
+            // get global transaction index in the blockchain
             vector<uint64_t> out_global_indeces;
 
             if (!core_storage.get_tx_outputs_gindexs(
@@ -214,9 +215,11 @@ int main(int ac, const char* av[]) {
                 continue;
             }
 
-            for (auto& g_idx: out_global_indeces)
+            uint64_t global_out_idx = {0};
+
+            if (output_index < out_global_indeces.size())
             {
-                cout << g_idx << endl;
+                global_out_idx = out_global_indeces[output_index];
             }
 
 
@@ -235,8 +238,10 @@ int main(int ac, const char* av[]) {
 
             print("\n  - output's pubkey: {}\n", output_data.pubkey);
 
-            print("  - in tx with hash: {}, out_i: {:03d}, xmr: {:0.4f}\n",
-                  tx_hash, output_index, xmreg::get_xmr(found_output.amount));
+            print("  - in tx with hash: {}\n", tx_hash);
+
+            print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.4f}\n",
+                  output_index, global_out_idx, xmreg::get_xmr(found_output.amount));
 
             ++count;
         }
