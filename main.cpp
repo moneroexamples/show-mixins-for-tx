@@ -164,16 +164,9 @@ int main(int ac, const char* av[]) {
             {
                 output_data = outputs.at(count);
             }
-//            else
-//            {
-//                output_data = core_storage.get_db().get_output_key(
-//                        tx_in_to_key.amount, i);
-//
-//                output_at = false;
-//            }
 
 
-            cout << "\nAbsolute offset: " << i << ", using output_at: " << output_at << endl;
+            //cout << "\nAbsolute offset: " << i << ", using output_at: " << output_at << endl;
 
 
             // find tx_hash with given output
