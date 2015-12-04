@@ -132,7 +132,7 @@ int main(int ac, const char* av[]) {
                 = boost::get<cryptonote::txin_to_key>(tx_in);
 
 
-        print("Input's Key image: {}, xmr: {:0.4f}\n",
+        print("Input's Key image: {}, xmr: {:0.6f}\n",
               tx_in_to_key.k_image,
               xmreg::get_xmr(tx_in_to_key.amount));
 
@@ -150,18 +150,26 @@ int main(int ac, const char* av[]) {
 
         for (const uint64_t& i: absolute_offsets)
         {
+
             cryptonote::output_data_t output_data;
+
+            bool output_at {true};
 
             // get tx hash and output index for output
             if (count < outputs.size())
             {
                 output_data = outputs.at(count);
             }
-            else
-            {
-                output_data = core_storage.get_db().get_output_key(
-                        tx_in_to_key.amount, i);
-            }
+//            else
+//            {
+//                output_data = core_storage.get_db().get_output_key(
+//                        tx_in_to_key.amount, i);
+//
+//                output_at = false;
+//            }
+
+
+            cout << "\nAbsolute offset: " << i << ", using output_at: " << output_at << endl;
 
 
             // find tx_hash with given output
@@ -236,11 +244,12 @@ int main(int ac, const char* av[]) {
                 print(", ours: "); print_colored(c, "{}", is_ours);
             }
 
-            print("\n  - output's pubkey: {}\n", output_data.pubkey);
+            print("\n"
+                  "  - output's pubkey: {}\n", output_data.pubkey);
 
             print("  - in tx with hash: {}\n", tx_hash);
 
-            print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.4f}\n",
+            print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.6f}\n",
                   output_index, global_out_idx, xmreg::get_xmr(found_output.amount));
 
             ++count;
