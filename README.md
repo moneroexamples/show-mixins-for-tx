@@ -1,9 +1,12 @@
 # Show mixins in each transaction
 
-No tool nor blockchain website exist that shows the mixin outputs used in the inputs of a given transaction.  This is a shame, as mixins represent one of the main
+Mixins represent one of the main
 advantages of [Monero](https://getmonero.org/) over other cryptocurrencies.
+[http://moneroblocks.eu/](http://moneroblocks.eu/) shows the mixins used
+for each transaction, but it lacks the ability to identify the real ones
+based on the address and viewkey.
 
-In this example, this problem is addressed. Specifically, a C++ program called
+In this example, this limitation is address. Specifically, a C++ program called
 `showmixins` is developed. The program prints out all mixins used in a given transaction. In addition,
 if monero address and privet view key are provided,
 the true mixins will be identified.
@@ -145,7 +148,7 @@ int main(int ac, const char* av[]) {
                 = boost::get<cryptonote::txin_to_key>(tx_in);
 
 
-        print("Input's Key image: {}, xmr: {:0.4f}\n",
+        print("Input's Key image: {}, xmr: {:0.6f}\n",
               tx_in_to_key.k_image,
               xmreg::get_xmr(tx_in_to_key.amount));
 
@@ -163,21 +166,18 @@ int main(int ac, const char* av[]) {
 
         for (const uint64_t& i: absolute_offsets)
         {
+
             cryptonote::output_data_t output_data;
+
+            bool output_at {true};
 
             // get tx hash and output index for output
             if (count < outputs.size())
             {
                 output_data = outputs.at(count);
             }
-            else
-            {
-                output_data = core_storage.get_db().get_output_key(
-                        tx_in_to_key.amount, i);
-            }
 
-
-            // find tx_hash with given output
+           // find tx_hash with given output
             crypto::hash tx_hash;
             cryptonote::transaction tx_found;
 
@@ -214,6 +214,28 @@ int main(int ac, const char* av[]) {
 
             bool is_ours {false};
 
+
+            // get global transaction index in the blockchain
+            vector<uint64_t> out_global_indeces;
+
+            if (!core_storage.get_tx_outputs_gindexs(
+                    cryptonote::get_transaction_hash(tx_found),
+                    out_global_indeces))
+            {
+                print("- cant find global indices for tx: {}\n", tx_hash);
+
+                continue;
+            }
+
+            // get the global index for the current output
+            uint64_t global_out_idx = {0};
+
+            if (output_index < out_global_indeces.size())
+            {
+                global_out_idx = out_global_indeces[output_index];
+            }
+
+
             if (VIEWKEY_AND_ADDRESS_GIVEN)
             {
                 // check if the given mixin's output is ours based
@@ -227,10 +249,13 @@ int main(int ac, const char* av[]) {
                 print(", ours: "); print_colored(c, "{}", is_ours);
             }
 
-            print("\n  - output's pubkey: {}\n", output_data.pubkey);
+            print("\n"
+                  "  - output's pubkey: {}\n", output_data.pubkey);
 
-            print("  - in tx with hash: {}, out_i: {:03d}, xmr: {:0.4f}\n",
-                  tx_hash, output_index, xmreg::get_xmr(found_output.amount));
+            print("  - in tx with hash: {}\n", tx_hash);
+
+            print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.6f}\n",
+                  output_index, global_out_idx, xmreg::get_xmr(found_output.amount));
 
             ++count;
         }
@@ -266,35 +291,42 @@ Output:
 ```bash
 tx hash          : <49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe>
 
-Input's Key image: <54802347b456a6dd632aea85cf970b09244107b6d5cea924feb7deafdc37cf9d>, xmr: 1.0000
+Input's Key image: <54802347b456a6dd632aea85cf970b09244107b6d5cea924feb7deafdc37cf9d>, xmr: 1.000000
 
  - mixin no: 1, block height: 67326
   - output's pubkey: <9f3145e43d7e0e3bbeb57d5a2fafef952d315bac341e507645621ed86efd1155>
-  - in tx with hash: <21885df01a25c548ddc0bb26dacba7fcc63f8c2810e193d4048fccb9791b1b38>, out_i: 175, xmr: 1.0000
+  - in tx with hash: <21885df01a25c548ddc0bb26dacba7fcc63f8c2810e193d4048fccb9791b1b38>
+  - out_i: 175, g_idx: 8381, xmr: 1.000000
 
  - mixin no: 2, block height: 143814
   - output's pubkey: <eeaa6f0a7cc1e975815743f12434b81a921f96c650fe269159dae20ef4077061>
-  - in tx with hash: <56aabcd79cd2c063bd40636a2ca69e9933c95e93ec3ae15e93beafbae0293a83>, out_i: 039, xmr: 1.0000
+  - in tx with hash: <56aabcd79cd2c063bd40636a2ca69e9933c95e93ec3ae15e93beafbae0293a83>
+  - out_i: 039, g_idx: 132680, xmr: 1.000000
 
  - mixin no: 3, block height: 153000
   - output's pubkey: <ad89c7b09b1f02ad872270510ccb96d24252170cd01bbbb45b307daf89e7ee5c>
-  - in tx with hash: <0daef7d911fc62ae50ee0134cb247fcf97061091fcbb1fcf4d96d1c9cdb8a969>, out_i: 036, xmr: 1.0000
+  - in tx with hash: <0daef7d911fc62ae50ee0134cb247fcf97061091fcbb1fcf4d96d1c9cdb8a969>
+  - out_i: 036, g_idx: 153950, xmr: 1.000000
 
  - mixin no: 4, block height: 168055
   - output's pubkey: <623eba3d75cc706f34b62c50cc212267e86f50df123741f1deea039da04b6a4e>
-  - in tx with hash: <31aa16467530036597f50f07fc30c3c8f8a8df55b19de831fcf3d2c18a951e1f>, out_i: 039, xmr: 1.0000
+  - in tx with hash: <31aa16467530036597f50f07fc30c3c8f8a8df55b19de831fcf3d2c18a951e1f>
+  - out_i: 039, g_idx: 180712, xmr: 1.000000
 
  - mixin no: 5, block height: 277037
   - output's pubkey: <f8f1ac2151024887959891d6021d84e6289a02b8743b84f941df15e387fc7c95>
-  - in tx with hash: <fc27fd68ca723784c7b9e0459cc9a53779bd1bd317f5a255114d897ecbed7464>, out_i: 202, xmr: 1.0000
+  - in tx with hash: <fc27fd68ca723784c7b9e0459cc9a53779bd1bd317f5a255114d897ecbed7464>
+  - out_i: 202, g_idx: 316577, xmr: 1.000000
 
  - mixin no: 6, block height: 539756
   - output's pubkey: <b81195393cc497f4deff5dbd9f6fc04d4c492e6c523aadb40dbd29cdf38d4662>
-  - in tx with hash: <6143d5d3f5ada27c1eddc46176607b67f492b1e9427757174e3e3215eeadaf63>, out_i: 049, xmr: 1.0000
+  - in tx with hash: <6143d5d3f5ada27c1eddc46176607b67f492b1e9427757174e3e3215eeadaf63>
+  - out_i: 049, g_idx: 547897, xmr: 1.000000
 
  - mixin no: 7, block height: 844912
   - output's pubkey: <852e2f8c919988294a15a65a4be8adff70e14c5907b0fee7e2ee005c134345e4>
-  - in tx with hash: <27003d209ae8854a72735e0cb14f46879dafbac65cf593fb880926a2a674efce>, out_i: 002, xmr: 1.0000
+  - in tx with hash: <27003d209ae8854a72735e0cb14f46879dafbac65cf593fb880926a2a674efce>
+  - out_i: 002, g_idx: 654842, xmr: 1.000000
 ```
 
 ## Example input and output 2
@@ -306,41 +338,7 @@ Transaction hash given along with the corresponding address and view key.
 
 Result:
 ```bash
-tx hash          : <49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe>
-
-private view key : <bdee822e89095833315925543a6d5b2a2a4418815cdfb3d0e91722d9c0b79501>
-address          : <42SLnbz1Ym9YtU3zHwKbQL8hXnGhtQ23BdnTGBtWwj6AXHSdEqRikDbM3wQxDWMhyCKZbQ9TfFh9N1SvHMXT81kK7senkME>
-
-
-Input's Key image: <54802347b456a6dd632aea85cf970b09244107b6d5cea924feb7deafdc37cf9d>, xmr: 1.0000
-
- - mixin no: 1, block height: 67326, ours: false
-  - output's pubkey: <9f3145e43d7e0e3bbeb57d5a2fafef952d315bac341e507645621ed86efd1155>
-  - in tx with hash: <21885df01a25c548ddc0bb26dacba7fcc63f8c2810e193d4048fccb9791b1b38>, out_i: 175, xmr: 1.0000
-
- - mixin no: 2, block height: 143814, ours: false
-  - output's pubkey: <eeaa6f0a7cc1e975815743f12434b81a921f96c650fe269159dae20ef4077061>
-  - in tx with hash: <56aabcd79cd2c063bd40636a2ca69e9933c95e93ec3ae15e93beafbae0293a83>, out_i: 039, xmr: 1.0000
-
- - mixin no: 3, block height: 153000, ours: false
-  - output's pubkey: <ad89c7b09b1f02ad872270510ccb96d24252170cd01bbbb45b307daf89e7ee5c>
-  - in tx with hash: <0daef7d911fc62ae50ee0134cb247fcf97061091fcbb1fcf4d96d1c9cdb8a969>, out_i: 036, xmr: 1.0000
-
- - mixin no: 4, block height: 168055, ours: false
-  - output's pubkey: <623eba3d75cc706f34b62c50cc212267e86f50df123741f1deea039da04b6a4e>
-  - in tx with hash: <31aa16467530036597f50f07fc30c3c8f8a8df55b19de831fcf3d2c18a951e1f>, out_i: 039, xmr: 1.0000
-
- - mixin no: 5, block height: 277037, ours: false
-  - output's pubkey: <f8f1ac2151024887959891d6021d84e6289a02b8743b84f941df15e387fc7c95>
-  - in tx with hash: <fc27fd68ca723784c7b9e0459cc9a53779bd1bd317f5a255114d897ecbed7464>, out_i: 202, xmr: 1.0000
-
- - mixin no: 6, block height: 539756, ours: false
-  - output's pubkey: <b81195393cc497f4deff5dbd9f6fc04d4c492e6c523aadb40dbd29cdf38d4662>
-  - in tx with hash: <6143d5d3f5ada27c1eddc46176607b67f492b1e9427757174e3e3215eeadaf63>, out_i: 049, xmr: 1.0000
-
- - mixin no: 7, block height: 844912, ours: true
-  - output's pubkey: <852e2f8c919988294a15a65a4be8adff70e14c5907b0fee7e2ee005c134345e4>
-  - in tx with hash: <27003d209ae8854a72735e0cb14f46879dafbac65cf593fb880926a2a674efce>, out_i: 002, xmr: 1.0000
+./showmixins -a 42SLnbz1Ym9YtU3zHwKbQL8hXnGhtQ23BdnTGBtWwj6AXHSdEqRikDbM3wQxDWMhyCKZbQ9TfFh9N1SvHMXT81kK7senkME -v bdee822e89095833315925543a6d5b2a2a4418815cdfb3d0e91722d9c0b79501 -t 49503c381ed74da2079697f0e8b7228608da3cade22575774ab8cf5ca425c3fe
 ```
 
 
@@ -405,6 +403,66 @@ Input's Key image: <059c860753ac88c1ee2abd7531169ebd636b0f9026ee1d288590f0eaf291
   - output's pubkey: <848a4a76a1d2652fa103ceea9bdd7d4c8a2fcd54cd7050648fa57bb144239642>
   - in tx with hash: <ce26c93d631ff7876134eeaeb574f6e9c791fe3eb816de16f68ee2138c9ccdbb>, out_i: 001, xmr: 0.0700
 ```
+
+## Example input and output 3
+Transaction hash given along with the corresponding address and view key.
+
+```bash
+./showmixins -a 41vEA7Ye8Bpeda6g59v5t46koWrVn2PNgEKgzquJjmiKCFTsh9gajr8J3pad49rqu581TAtFGCH9CYTCkYrCpuWUG9GkgeB -v fed77158ec692fe9eb951f6aeb22c3bda16fe8926c1aac13a5651a9c27f34309  -t b7822d7ae83a07fa49ba54ff935fa6899a49fb5c35269369141470b709c073b8
+```
+
+```bash
+tx hash          : <b7822d7ae83a07fa49ba54ff935fa6899a49fb5c35269369141470b709c073b8>
+
+private view key : <fed77158ec692fe9eb951f6aeb22c3bda16fe8926c1aac13a5651a9c27f34309>
+address          : <41vEA7Ye8Bpeda6g59v5t46koWrVn2PNgEKgzquJjmiKCFTsh9gajr8J3pad49rqu581TAtFGCH9CYTCkYrCpuWUG9GkgeB>
+
+
+Input's Key image: <68d476d12c23ed8bacf9286469ccce41b3eb51eb3c6be2af5405764093f7e6e2>, xmr: 0.090000
+
+ - mixin no: 1, block height: 108348, ours: false
+  - output's pubkey: <7b7d2d572efd85ada54fd7df8af054d04a28a6a0bfeaa7be60ec402faf076888>
+  - in tx with hash: <dad81e7c0412ef9d02e308502b02ef2719798a5b2a0f4488a166e90e4e78211b>
+  - out_i: 002, g_idx: 70913, xmr: 0.090000
+
+ - mixin no: 2, block height: 131945, ours: false
+  - output's pubkey: <fff8d49e9e912a0ddbcc83a3d23284c4bf7041e9e560341261c2a70bc1db1079>
+  - in tx with hash: <449c1642c8ba5c17b1994ad4069bf27499112915e57ff6d73fa1aba68a2af0e4>
+  - out_i: 002, g_idx: 82215, xmr: 0.090000
+
+ - mixin no: 3, block height: 485596, ours: false
+  - output's pubkey: <5f9e6cb693fdeb3521faf1a81460dde9ba9f89153dcfd5e3474931fc7c0dac48>
+  - in tx with hash: <476ccffee2f6087348061782aa6fc583a8a80bd9d491eafd65c8979287efb24b>
+  - out_i: 000, g_idx: 144248, xmr: 0.090000
+
+ - mixin no: 4, block height: 844131, ours: true
+  - output's pubkey: <5f217820bb13d6f29eb4e889ca85d4abd90411b9b4155bc441b31a159de86cf4>
+  - in tx with hash: <d680c60ccc04cea643765428c7c44afb12e7b68cd50fd93182a86b8cb920f3f9>
+  - out_i: 000, g_idx: 200232, xmr: 0.090000
+
+Input's Key image: <7c2aeee6d01cfc71f6fc8b975269fb01b35a8934101672524c35275322a6d949>, xmr: 0.090000
+
+ - mixin no: 1, block height: 115423, ours: false
+  - output's pubkey: <f63eb90fefea6abc08ab19a03f6a2b65f98496ed465bcd35532e3cfe0cbba718>
+  - in tx with hash: <30726385586ffd850d8c1bf9fbfbfaedee197e30b3e5ddaf1d2c993153c013ae>
+  - out_i: 000, g_idx: 74485, xmr: 0.090000
+
+ - mixin no: 2, block height: 472372, ours: false
+  - output's pubkey: <7e2120811ce322caf1981147eb3b7c03cda686d78dbc7367e5259b94f430319c>
+  - in tx with hash: <a79749fa9eab22b38ef52d794bf3543982a191b6928640fc6cc0ea04e26e2956>
+  - out_i: 000, g_idx: 142309, xmr: 0.090000
+
+ - mixin no: 3, block height: 735365, ours: false
+  - output's pubkey: <f0fc53e19d2a795dafa2566ab18819a54d9c7c98880bbf639af1eae8938ba01f>
+  - in tx with hash: <e827c3d8ee2de1079a4f0aefb12f6b44d7100b2326ebf522640c126370578fdb>
+  - out_i: 002, g_idx: 183927, xmr: 0.090000
+
+ - mixin no: 4, block height: 844131, ours: true
+  - output's pubkey: <5cb0a097d4f13062756ecd11c324c6c11eca2d8ebf90241bdc891a3ae08d1365>
+  - in tx with hash: <c772702301bea767352f6309f0f46bf8b84a105580a6cdfdf30d16b073f3b2fe>
+  - out_i: 000, g_idx: 200233, xmr: 0.090000
+```
+
 
 ## Compile this example
 The dependencies are same as those for Monero, so I assume Monero compiles
