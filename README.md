@@ -11,7 +11,7 @@ In this example, this limitation is address. Specifically, a C++ program called
 if monero address and privet view key are provided,
 the true mixins will be identified.
 
-## Pre-requisites
+## Prerequisite
 
 Everything here was done and tested
 on Ubuntu 14.04 x86_64 and Ubuntu 15.10 x86_64.
