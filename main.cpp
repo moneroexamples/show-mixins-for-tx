@@ -237,10 +237,15 @@ int main(int ac, const char* av[]) {
                 print(", ours: "); print_colored(c, "{}", is_ours);
             }
 
+            // get tx public key from extras field
+            crypto::public_key pub_tx_key = cryptonote::get_tx_pub_key_from_extra(tx_found);
+
             print("\n"
                   "  - output's pubkey: {}\n", output_data.pubkey);
 
             print("  - in tx with hash: {}\n", tx_hash);
+
+            print("  - this tx pub key: {}\n", pub_tx_key);
 
             print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.6f}\n",
                   output_index, global_out_idx, xmreg::get_xmr(found_output.amount));
