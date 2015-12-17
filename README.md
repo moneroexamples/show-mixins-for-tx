@@ -1,16 +1,16 @@
-# Show mixins in each transaction
+# Show mixins in a transaction
 
 Mixins represent one of the main
 advantages of [Monero](https://getmonero.org/) over other cryptocurrencies.
-[http://moneroblocks.eu/](http://moneroblocks.eu/) shows the mixins used
+[http://moneroblocks.eu/](http://moneroblocks.eu/) shows mixins used
 for each transaction, but it lacks the ability to identify the real mixin
-based on the address and viewkey provided, and also it provides very limited information about
-the mixins.
+based on the address and viewkey provided, and also it provides very limited
+information about the mixins.
 
-In this example, those limitations are address. Specifically, a C++ program called
-`showmixins` is developed. The program prints out all mixins used in a given transaction. In addition,
-if monero address and privet view key are provided,
-the true mixins will be identified.
+In this example, those limitations are addressed. Specifically, a C++ program called
+`showmixins` is developed. The program prints out detailed information about
+mixins used in a given transaction.  In addition, if monero address and the
+corresponding view key are provided, the true mixin in each input is identified.
 
 ## Prerequisite
 
@@ -556,7 +556,7 @@ Input's Key image: <7c2aeee6d01cfc71f6fc8b975269fb01b35a8934101672524c35275322a6
 
 ## Observation
 
-Have you noticed something interesting in the above examples? 
+Have you noticed something interesting in the above examples?
 
 
 ## Compile this example
