@@ -96,7 +96,7 @@ namespace xmreg
     string
     print_address(const account_public_address& address, bool testnet)
     {
-        return get_account_address_as_str(testnet, address);
+        return "<" + get_account_address_as_str(testnet, address) + ">";
     }
 
 
@@ -157,7 +157,7 @@ namespace xmreg
     ostream&
     operator<< (ostream& os, const account_public_address& addr)
     {
-        os << "<" << get_account_address_as_str(false, addr) << ">";
+        os << get_account_address_as_str(false, addr);
         return os;
     }
 
