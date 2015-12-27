@@ -30,7 +30,9 @@ namespace xmreg
                 ("address,a", value<string>(),
                  "monero address string")
                 ("bc-path,b", value<string>(),
-                 "path to lmdb blockchain");
+                 "path to lmdb blockchain")
+                ("testnet",  value<bool>()->default_value(false)->implicit_value(true),
+                 "is the address from testnet network");
 
 
         store(command_line_parser(acc, avv)

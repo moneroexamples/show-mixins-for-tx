@@ -13,10 +13,6 @@ using boost::filesystem::path;
 unsigned int epee::g_test_dbg_lock_sleep = 0;
 
 
-
-
-
-
 int main(int ac, const char* av[]) {
 
     // get command line options
@@ -40,11 +36,14 @@ int main(int ac, const char* av[]) {
     auto viewkey_opt = opts.get_option<string>("viewkey");
     auto address_opt = opts.get_option<string>("address");
     auto bc_path_opt = opts.get_option<string>("bc-path");
+    bool testnet     = *(opts.get_option<bool>("testnet"));
 
 
     // get the program command line options, or
     // some default values for quick check
-    string tx_hash_str = tx_hash_opt ? *tx_hash_opt : "09d9e8eccf82b3d6811ed7005102caf1b605f325cf60ed372abeb4a67d956fff";
+    string tx_hash_str = tx_hash_opt ?
+                         *tx_hash_opt :
+                         "09d9e8eccf82b3d6811ed7005102caf1b605f325cf60ed372abeb4a67d956fff";
 
 
     crypto::hash tx_hash;
@@ -68,7 +67,7 @@ int main(int ac, const char* av[]) {
         }
 
         // parse string representing given monero address
-        if (!xmreg::parse_str_address(*address_opt,  address))
+        if (!xmreg::parse_str_address(*address_opt,  address, testnet))
         {
             cerr << "Cant parse address: " << *address_opt << endl;
             return 1;
@@ -108,7 +107,7 @@ int main(int ac, const char* av[]) {
     {
         // lets check our keys
         print("private view key : {}\n", private_view_key);
-        print("address          : {}\n\n\n", address);
+        print("address          : {}\n\n\n", xmreg::print_address(address, testnet));
     }
 
 
@@ -131,6 +130,15 @@ int main(int ac, const char* av[]) {
 
     for (const cryptonote::txin_v& tx_in: tx.vin)
     {
+
+
+        if (tx_in.type() == typeid(cryptonote::txin_gen))
+        {
+            print(" - coinbase tx: no inputs here.\n");
+            continue;
+        }
+
+
         // get tx input key
         const cryptonote::txin_to_key& tx_in_to_key
                 = boost::get<cryptonote::txin_to_key>(tx_in);
