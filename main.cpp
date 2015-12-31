@@ -205,8 +205,19 @@ int main(int ac, const char* av[]) {
                 continue;
             }
 
-            print("\n - mixin no: {}, block height: {}",
-                  count + 1, output_data.height);
+
+            // get block of given height, as we want to get its timestamp
+            cryptonote::block blk;
+
+            if (! mcore.get_block_by_height(output_data.height, blk))
+            {
+                print("- cant get block of height: {}\n", output_data.height);
+                continue;
+            }
+
+
+            print("\n - mixin no: {}, block height: {}, timestamp: {}",
+                  count + 1, output_data.height, xmreg::timestamp_to_str(blk.timestamp));
 
             bool is_ours {false};
 
