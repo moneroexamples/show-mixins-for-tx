@@ -14,16 +14,14 @@ corresponding view key are provided, the true mixin in each input is identified.
 
 ## Prerequisite
 
-Everything here was done and tested
-on Ubuntu 14.04 x86_64 and Ubuntu 15.10 x86_64.
+Everything here was done and tested using Monero 0.9.1 on
+Xubuntu 15.10 x86_64.
 
-Instruction for Monero compilation:
- - [Ubuntu 14.04 x86_64](http://moneroexamples.github.io/compile-monero-ubuntu/)
- - [Ubuntu 15.10 x86_64](http://moneroexamples.github.io/compile-monero-ubuntu-1510/)
+Instruction for Monero 0.9 compilation:
+ - [Ubuntu 14.04 and 15.10 x86_64](https://github.com/moneroexamples/compile-monero-09-on-ubuntu)
 
 Monero source code compilation and setup are same as
 [here](http://moneroexamples.github.io/access-blockchain-in-cpp/).
-
 
 
 ## C++ code
