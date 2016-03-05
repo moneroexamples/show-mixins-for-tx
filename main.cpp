@@ -120,7 +120,7 @@ int main(int ac, const char* av[]) {
     // get block height in which the given transaction is located
     uint64_t tx_blk_height = core_storage.get_db().get_tx_block_height(tx_hash);
 
-    print("\n\ntx hash          : {}, block no. {}\n\n", tx_hash, tx_blk_height);
+    print("\n\ntx hash          : {}, block height. {}\n\n", tx_hash, tx_blk_height);
 
     if (VIEWKEY_AND_ADDRESS_GIVEN)
     {
