@@ -100,17 +100,6 @@ int main(int ac, const char* av[]) {
         return 1;
     }
 
-
-    print("\n\ntx hash          : {}\n\n", tx_hash);
-
-    if (VIEWKEY_AND_ADDRESS_GIVEN)
-    {
-        // lets check our keys
-        print("private view key : {}\n", private_view_key);
-        print("address          : {}\n\n\n", xmreg::print_address(address, testnet));
-    }
-
-
     // get the high level cryptonote::Blockchain object to interact
     // with the blockchain lmdb database
     cryptonote::Blockchain& core_storage = mcore.get_core();
@@ -127,6 +116,19 @@ int main(int ac, const char* av[]) {
         cerr << e.what() << endl;
         return false;
     }
+
+    // get block height in which the given transaction is located
+    uint64_t tx_blk_height = core_storage.get_db().get_tx_block_height(tx_hash);
+
+    print("\n\ntx hash          : {}, block no. {}\n\n", tx_hash, tx_blk_height);
+
+    if (VIEWKEY_AND_ADDRESS_GIVEN)
+    {
+        // lets check our keys
+        print("private view key : {}\n", private_view_key);
+        print("address          : {}\n\n\n", xmreg::print_address(address, testnet));
+    }
+
 
     for (const cryptonote::txin_v& tx_in: tx.vin)
     {
