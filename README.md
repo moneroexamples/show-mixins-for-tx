@@ -1305,7 +1305,7 @@ cmake .
 make
 ```
 
-After this, `showmixins` executable file should be present in access-blockchain-in-cpp
+After this, `showmixins` executable file should be present in show-mixins-for-tx
 folder. How to use it, can be seen in the above example outputs.
 
 
