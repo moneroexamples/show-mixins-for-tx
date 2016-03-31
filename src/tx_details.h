@@ -52,6 +52,15 @@ namespace xmreg
                    const secret_key& private_view_key,
                    const public_key& public_spend_key);
 
+    bool
+    get_payment_id(const transaction& tx,
+                   crypto::hash& payment_id);
+
+    bool
+    get_encrypted_payment_id(const transaction& tx,
+                             crypto::hash8& payment_id);
+
+
 }
 
 template<>

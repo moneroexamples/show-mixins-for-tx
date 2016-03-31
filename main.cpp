@@ -131,6 +131,30 @@ int main(int ac, const char* av[]) {
         return false;
     }
 
+    // get tx payment id if present
+    // checks for encrypted id first, and then for normal
+
+    crypto::hash8 encrypted_payment_id;
+
+    if (xmreg::get_encrypted_payment_id(tx, encrypted_payment_id))
+    {
+        print("\nPayment id (encrypted): {:w}\n", encrypted_payment_id);
+
+    }
+    else
+    {
+        crypto::hash payment_id;
+
+        if (xmreg::get_payment_id(tx, payment_id))
+        {
+            print("\nPayment id: {:s}\n", payment_id);
+        }
+        else
+        {
+            print("\nPayment id: not present\n");
+        }
+    }
+
     // get block height in which the given transaction is located
     uint64_t tx_blk_height = core_storage.get_db().get_tx_block_height(tx_hash);
 
