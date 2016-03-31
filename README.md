@@ -1,4 +1,4 @@
-# Show mixins in a transaction
+# Show detailed mixins information for a given transaction
 
 Mixins represent one of the main
 advantages of [Monero](https://getmonero.org/) over other cryptocurrencies.
@@ -30,77 +30,9 @@ The main part of the example is main.cpp.
 ```c++
 int main(int ac, const char* av[]) {
 
-    // get command line options
-    xmreg::CmdLineOptions opts {ac, av};
-
-    auto help_opt = opts.get_option<bool>("help");
-
-    // if help was chosen, display help text and finish
-    if (*help_opt)
-    {
-        return 0;
-    }
-
-
-    // flag indicating if viewkey and address were
-    // given by the user
-    bool VIEWKEY_AND_ADDRESS_GIVEN {false};
-
-    // get other options
-    auto tx_hash_opt = opts.get_option<string>("txhash");
-    auto viewkey_opt = opts.get_option<string>("viewkey");
-    auto address_opt = opts.get_option<string>("address");
-    auto bc_path_opt = opts.get_option<string>("bc-path");
-
-
-    // get the program command line options, or
-    // some default values for quick check
-    string tx_hash_str = tx_hash_opt ? *tx_hash_opt : "09d9e8eccf82b3d6811ed7005102caf1b605f325cf60ed372abeb4a67d956fff";
-
-
-    crypto::hash tx_hash;
-
-    if (!xmreg::parse_str_secret_key(tx_hash_str, tx_hash))
-    {
-        cerr << "Cant parse tx hash: " << tx_hash_str << endl;
-        return 1;
-    }
-
-    crypto::secret_key private_view_key;
-    cryptonote::account_public_address address;
-
-    if (viewkey_opt && address_opt)
-    {
-         // parse string representing given private viewkey
-        if (!xmreg::parse_str_secret_key(*viewkey_opt, private_view_key))
-        {
-            cerr << "Cant parse view key: " << *viewkey_opt << endl;
-            return 1;
-        }
-
-        // parse string representing given monero address
-        if (!xmreg::parse_str_address(*address_opt,  address))
-        {
-            cerr << "Cant parse address: " << *address_opt << endl;
-            return 1;
-        }
-
-        VIEWKEY_AND_ADDRESS_GIVEN = true;
-    }
-
-
-    path blockchain_path;
-
-    if (!xmreg::get_blockchain_path(bc_path_opt, blockchain_path))
-    {
-        // if problem obtaining blockchain path, finish.
-        return 1;
-    }
-
-    print("Blockchain path      : {}\n", blockchain_path);
-
-    // enable basic monero log output
-    xmreg::enable_monero_log();
+    // .....
+    // argument parsing removed to save some space
+    // .....
 
     // create instance of our MicroCore
     xmreg::MicroCore mcore;
@@ -112,20 +44,23 @@ int main(int ac, const char* av[]) {
         return 1;
     }
 
-
-    print("\n\ntx hash          : {}\n\n", tx_hash);
-
-    if (VIEWKEY_AND_ADDRESS_GIVEN)
-    {
-        // lets check our keys
-        print("private view key : {}\n", private_view_key);
-        print("address          : {}\n\n\n", address);
-    }
-
-
     // get the high level cryptonote::Blockchain object to interact
     // with the blockchain lmdb database
     cryptonote::Blockchain& core_storage = mcore.get_core();
+
+
+    // get the current blockchain height. Just to check
+    // if it reads ok.
+    uint64_t height = core_storage.get_current_blockchain_height() - 1;
+
+    print("\n\n"
+          "Top block height      : {:d}\n", height);
+
+    // get time of the current block
+    uint64_t current_blk_timestamp = mcore.get_blk_timestamp(height);
+
+    print("Top block block time  : {:s}\n", xmreg::timestamp_to_str(current_blk_timestamp));
+
 
     cryptonote::transaction tx;
 
@@ -140,14 +75,37 @@ int main(int ac, const char* av[]) {
         return false;
     }
 
-    for (const cryptonote::txin_v& tx_in: tx.vin)
+    // get block height in which the given transaction is located
+    uint64_t tx_blk_height = core_storage.get_db().get_tx_block_height(tx_hash);
+
+    print("\ntx hash          : {}, block height {}\n\n", tx_hash, tx_blk_height);
+
+    if (VIEWKEY_AND_ADDRESS_GIVEN)
     {
+        // lets check our keys
+        print("private view key : {}\n", private_view_key);
+        print("address          : {}\n\n\n", xmreg::print_address(address, testnet));
+    }
+
+    // total number of inputs in the transaction tx
+    size_t input_no = tx.vin.size();
+
+    for (size_t in_i = 0; in_i < input_no; ++in_i)
+    {
+        cryptonote::txin_v tx_in = tx.vin[in_i];
+
+        if (tx_in.type() == typeid(cryptonote::txin_gen))
+        {
+            print(" - coinbase tx: no inputs here.\n");
+            continue;
+        }
+
         // get tx input key
         const cryptonote::txin_to_key& tx_in_to_key
                 = boost::get<cryptonote::txin_to_key>(tx_in);
 
 
-        print("Input's Key image: {}, xmr: {:0.6f}\n",
+        print("Input's key image: {}, xmr: {:0.6f}\n",
               tx_in_to_key.k_image,
               xmreg::get_xmr(tx_in_to_key.amount));
 
@@ -208,8 +166,29 @@ int main(int ac, const char* av[]) {
                 continue;
             }
 
-            print("\n - mixin no: {}, block height: {}",
-                  count + 1, output_data.height);
+
+            // get block of given height, as we want to get its timestamp
+            cryptonote::block blk;
+
+            if (!mcore.get_block_by_height(output_data.height, blk))
+            {
+                print("- cant get block of height: {}\n", output_data.height);
+                continue;
+            }
+
+            // get mixin block timestamp
+            uint64_t blk_timestamp = blk.timestamp;
+
+            // calculate time difference bewteen mixing block and current blockchain height
+            array<size_t, 5> time_diff;
+            time_diff = xmreg::timestamp_difference(current_blk_timestamp, blk_timestamp);
+
+
+            print("\n - mixin no: {}, block height: {}, timestamp: {}, "
+                          "time_diff: {} y, {} d, {} h, {} m, {} s",
+                  count + 1, output_data.height,
+                  xmreg::timestamp_to_str(blk_timestamp),
+                  time_diff[0], time_diff[1], time_diff[2], time_diff[3], time_diff[4]);
 
             bool is_ours {false};
 
@@ -262,10 +241,19 @@ int main(int ac, const char* av[]) {
                   output_index, global_out_idx, xmreg::get_xmr(found_output.amount));
 
             ++count;
+        } // for (const uint64_t& i: absolute_offsets)
+
+        print("\nRing signature for the above impute, i.e.,: key image {}, xmr: {:0.6f}: \n",
+              tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
+
+        for (const crypto::signature &sig: tx.signatures[in_i])
+        {
+            cout << " - " << xmreg::print_sig(sig) << endl;
         }
 
         cout << endl;
-    }
+
+    } // for (size_t in_i = 0; in_i < input_no; ++in_i)
 
     cout << "\nEnd of program." << endl;
 
