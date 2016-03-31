@@ -299,7 +299,7 @@ int main(int ac, const char* av[]) {
             ++count;
         } // for (const uint64_t& i: absolute_offsets)
 
-        print("\nRing signature for the above inpute, i.e.,: key image {}, xmr: {:0.6f}: \n",
+        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.6f}: \n",
               tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
 
         for (const crypto::signature &sig: tx.signatures[in_i])
