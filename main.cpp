@@ -138,7 +138,7 @@ int main(int ac, const char* av[]) {
 
     if (xmreg::get_encrypted_payment_id(tx, encrypted_payment_id))
     {
-        print("\nPayment id (encrypted): {:w}\n", encrypted_payment_id);
+        print("\nPayment id (encrypted): {:s}\n", encrypted_payment_id);
 
     }
     else
