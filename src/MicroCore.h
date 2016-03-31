@@ -58,6 +58,9 @@ namespace xmreg
                                        crypto::hash& tx_hash,
                                        transaction& tx_found);
 
+        uint64_t
+        get_blk_timestamp(uint64_t blk_height);
+
 
         virtual ~MicroCore();
     };

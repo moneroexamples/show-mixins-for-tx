@@ -289,4 +289,41 @@ namespace xmreg
     }
 
 
+    array<size_t, 5>
+    timestamp_difference(uint64_t t1, uint64_t t2)
+    {
+
+        uint64_t timestamp_diff = t1 - t2;
+
+        // calculate difference of timestamps from current block to the mixin one
+        if (t2 > t1)
+        {
+            timestamp_diff = t2 - t1;
+        }
+
+        uint64_t time_diff_years = timestamp_diff / 31536000;
+
+        timestamp_diff -=  time_diff_years * 31536000;
+
+        uint64_t time_diff_days = timestamp_diff / 86400;
+
+        timestamp_diff -=  time_diff_days * 86400;
+
+        uint64_t time_diff_hours = timestamp_diff / 3600;
+
+        timestamp_diff -=  time_diff_hours * 3600;
+
+        uint64_t time_diff_minutes = timestamp_diff / 60;
+
+        timestamp_diff -=  time_diff_minutes * 60;
+
+        uint64_t time_diff_seconds = timestamp_diff ;
+
+        return array<size_t, 5> {time_diff_years, time_diff_days,
+                                 time_diff_hours, time_diff_minutes,
+                                 time_diff_seconds};
+
+    };
+
+
 }

@@ -1,6 +1,5 @@
 #include "src/MicroCore.h"
 #include "src/CmdLineOptions.h"
-#include "src/tools.h"
 
 #include "ext/format.h"
 
@@ -104,6 +103,20 @@ int main(int ac, const char* av[]) {
     // get the high level cryptonote::Blockchain object to interact
     // with the blockchain lmdb database
     cryptonote::Blockchain& core_storage = mcore.get_core();
+
+
+    // get the current blockchain height. Just to check
+    // if it reads ok.
+    uint64_t height = core_storage.get_current_blockchain_height() - 1;
+
+    print("\n\n"
+          "Top block height      : {:d}\n", height);
+
+    // get time of the current block
+    uint64_t current_blk_timestamp = mcore.get_blk_timestamp(height);
+
+    print("Top block block time  : {:s}\n", xmreg::timestamp_to_str(current_blk_timestamp));
+
 
     cryptonote::transaction tx;
 
@@ -212,15 +225,25 @@ int main(int ac, const char* av[]) {
             // get block of given height, as we want to get its timestamp
             cryptonote::block blk;
 
-            if (! mcore.get_block_by_height(output_data.height, blk))
+            if (!mcore.get_block_by_height(output_data.height, blk))
             {
                 print("- cant get block of height: {}\n", output_data.height);
                 continue;
             }
 
+            // get mixin block timestamp
+            uint64_t blk_timestamp = blk.timestamp;
 
-            print("\n - mixin no: {}, block height: {}, timestamp: {}",
-                  count + 1, output_data.height, xmreg::timestamp_to_str(blk.timestamp));
+            // calculate time difference bewteen mixing block and current blockchain height
+            array<size_t, 5> time_diff;
+            time_diff = xmreg::timestamp_difference(current_blk_timestamp, blk_timestamp);
+
+
+            print("\n - mixin no: {}, block height: {}, timestamp: {}, "
+                          "time_diff: {} y, {} d, {} h, {} m, {} s",
+                  count + 1, output_data.height,
+                  xmreg::timestamp_to_str(blk_timestamp),
+                  time_diff[0], time_diff[1], time_diff[2], time_diff[3], time_diff[4]);
 
             bool is_ours {false};
 

@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 /**
  * Some helper functions used in the example.
@@ -136,6 +137,9 @@ namespace xmreg
     {
         return  static_cast<double>(core_amount) / 1e12;
     }
+
+    array<size_t, 5>
+    timestamp_difference(uint64_t t1, uint64_t t2);
 
 
 

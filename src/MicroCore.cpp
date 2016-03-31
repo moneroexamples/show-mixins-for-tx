@@ -247,7 +247,19 @@ namespace xmreg
     }
 
 
+    uint64_t
+    MicroCore::get_blk_timestamp(uint64_t blk_height)
+    {
+        cryptonote::block blk;
 
+        if (!get_block_by_height(blk_height, blk))
+        {
+            cerr << "Cant get block by height: " << blk_height << endl;
+            return 0;
+        }
+
+        return blk.timestamp;
+    }
 
 
     /**
