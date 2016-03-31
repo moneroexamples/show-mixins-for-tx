@@ -92,6 +92,9 @@ namespace xmreg
                   bool testnet = false);
 
     string
+    print_sig (const signature& sig);
+
+    string
     remove_trailing_path_separator(const string& in_path);
 
     bf::path

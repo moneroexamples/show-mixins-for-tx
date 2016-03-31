@@ -143,17 +143,18 @@ int main(int ac, const char* av[]) {
         print("address          : {}\n\n\n", xmreg::print_address(address, testnet));
     }
 
+    // total number of inputs in the transaction tx
+    size_t input_no = tx.vin.size();
 
-    for (const cryptonote::txin_v& tx_in: tx.vin)
+    for (size_t in_i = 0; in_i < input_no; ++in_i)
     {
-
+        cryptonote::txin_v tx_in = tx.vin[in_i];
 
         if (tx_in.type() == typeid(cryptonote::txin_gen))
         {
             print(" - coinbase tx: no inputs here.\n");
             continue;
         }
-
 
         // get tx input key
         const cryptonote::txin_to_key& tx_in_to_key
