@@ -185,7 +185,7 @@ int main(int ac, const char* av[]) {
                 = boost::get<cryptonote::txin_to_key>(tx_in);
 
 
-        print("Input's key image: {}, xmr: {:0.6f}\n",
+        print("Input's key image: {}, xmr: {:0.8f}\n",
               tx_in_to_key.k_image,
               xmreg::get_xmr(tx_in_to_key.amount));
 
@@ -317,13 +317,13 @@ int main(int ac, const char* av[]) {
 
             print("  - this tx pub key: {}\n", pub_tx_key);
 
-            print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.6f}\n",
+            print("  - out_i: {:03d}, g_idx: {:d}, xmr: {:0.8f}\n",
                   output_index, global_out_idx, xmreg::get_xmr(found_output.amount));
 
             ++count;
         } // for (const uint64_t& i: absolute_offsets)
 
-        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.6f}: \n",
+        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n",
               tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
 
         for (const crypto::signature &sig: tx.signatures[in_i])
