@@ -169,6 +169,9 @@ int main(int ac, const char* av[]) {
 
     time_t server_timestamp {std::time(nullptr)};
 
+    vector<string> mixin_timescales_str;
+
+
     // total number of inputs in the transaction tx
     size_t input_no = tx.vin.size();
 
@@ -201,9 +204,9 @@ int main(int ac, const char* av[]) {
                                              absolute_offsets,
                                              outputs);
 
-        size_t count = 0;
-
         vector<uint64_t> mixin_timestamps;
+
+        size_t count = 0;
 
         for (const uint64_t& i: absolute_offsets)
         {
@@ -330,16 +333,16 @@ int main(int ac, const char* av[]) {
         } // for (const uint64_t& i: absolute_offsets)
 
 
+
         // get mixins in time scale for visual representation
         string mixin_times_scale = xmreg::timestamps_time_scale(mixin_timestamps,
                                                                 server_timestamp);
 
-        print("\nMixins timescale and ring signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n",
-              tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
+        // save the string timescales for later to show
+        mixin_timescales_str.push_back(mixin_times_scale);
 
-        cout << "Genesis <" << mixin_times_scale
-             << ">" << " " << xmreg::timestamp_to_str(server_timestamp, "%F")
-             << endl;
+        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n",
+              tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
 
         for (const crypto::signature &sig: tx.signatures[in_i])
         {
@@ -349,6 +352,16 @@ int main(int ac, const char* av[]) {
         cout << endl;
 
     } // for (size_t in_i = 0; in_i < input_no; ++in_i)
+
+
+    print("\n\nMixin timescales for this transaction: \n");
+
+    for (const string& mixin_times_scale: mixin_timescales_str)
+    {
+        cout << "Genesis <" << mixin_times_scale
+             << ">" << " " << xmreg::timestamp_to_str(server_timestamp, "%F")
+             << endl;
+    }
 
     cout << "\nEnd of program." << endl;
 
