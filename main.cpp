@@ -339,7 +339,7 @@ int main(int ac, const char* av[]) {
         // save the string timescales for later to show
         mixin_timescales_str.push_back(mixin_times_scale);
 
-        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n",
+        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n\n",
               tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
 
         for (const crypto::signature &sig: tx.signatures[in_i])
