@@ -335,4 +335,38 @@ namespace xmreg
     };
 
 
+    string
+    timestamps_time_scale(const vector<uint64_t>& timestamps,
+                          uint64_t timeN, uint64_t time0)
+    {
+        string empty_time = string("___________________________________")
+                            + string("___________________________________")
+                            + string("___________________________________")
+                            + string("___________________________________");
+
+        size_t time_axis_length = empty_time.size();
+
+        uint64_t interval_length = timeN-time0;
+
+        double scale = double(interval_length) / double(time_axis_length);
+
+        for (const auto& timestamp: timestamps)
+        {
+
+            if (timestamp < time0 || timestamp > timeN)
+            {
+                cout << "Out of range" << endl;
+                continue;
+            }
+
+            uint64_t timestamp_place = double(timestamp-time0)/double(interval_length)*(time_axis_length-1);
+            //cout << timestamp_place << endl;
+            empty_time[timestamp_place] = '*';
+        }
+
+        return empty_time;
+    }
+
+
+
 }

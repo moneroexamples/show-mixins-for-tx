@@ -167,6 +167,8 @@ int main(int ac, const char* av[]) {
         print("address          : {}\n\n\n", xmreg::print_address(address, testnet));
     }
 
+    time_t server_timestamp {std::time(nullptr)};
+
     // total number of inputs in the transaction tx
     size_t input_no = tx.vin.size();
 
@@ -200,6 +202,8 @@ int main(int ac, const char* av[]) {
                                              outputs);
 
         size_t count = 0;
+
+        vector<uint64_t> mixin_timestamps;
 
         for (const uint64_t& i: absolute_offsets)
         {
@@ -263,6 +267,8 @@ int main(int ac, const char* av[]) {
             array<size_t, 5> time_diff;
             time_diff = xmreg::timestamp_difference(current_blk_timestamp, blk_timestamp);
 
+            // save mixin timestamp for later
+            mixin_timestamps.push_back(blk_timestamp);
 
             print("\n - mixin no: {}, block height: {}, timestamp: {}, "
                           "time_diff: {} y, {} d, {} h, {} m, {} s",
@@ -323,8 +329,17 @@ int main(int ac, const char* av[]) {
             ++count;
         } // for (const uint64_t& i: absolute_offsets)
 
-        print("\nRing signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n",
+
+        // get mixins in time scale for visual representation
+        string mixin_times_scale = xmreg::timestamps_time_scale(mixin_timestamps,
+                                                                server_timestamp);
+
+        print("\nMixins timescale and ring signature for the above input, i.e.,: key image {}, xmr: {:0.8f}: \n",
               tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
+
+        cout << "Genesis <" << mixin_times_scale
+             << ">" <<  xmreg::timestamp_to_str(server_timestamp)
+             << endl;
 
         for (const crypto::signature &sig: tx.signatures[in_i])
         {

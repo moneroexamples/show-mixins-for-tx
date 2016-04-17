@@ -144,6 +144,11 @@ namespace xmreg
     array<size_t, 5>
     timestamp_difference(uint64_t t1, uint64_t t2);
 
+    string
+    timestamps_time_scale(const vector<uint64_t>& timestamps,
+                          uint64_t timeN,
+                          uint64_t time0 = 1397818193 /* timestamp of the second block */);
+
 
 
 }
