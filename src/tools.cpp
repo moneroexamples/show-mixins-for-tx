@@ -339,10 +339,10 @@ namespace xmreg
     timestamps_time_scale(const vector<uint64_t>& timestamps,
                           uint64_t timeN, uint64_t time0)
     {
-        string empty_time = string("___________________________________")
-                            + string("___________________________________")
-                            + string("___________________________________")
-                            + string("___________________________________");
+        string empty_time =   string("_____________________________")
+                            + string("_____________________________")
+                            + string("_____________________________")
+                            + string("_____________________________");
 
         size_t time_axis_length = empty_time.size();
 

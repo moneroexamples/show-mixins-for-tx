@@ -338,7 +338,7 @@ int main(int ac, const char* av[]) {
               tx_in_to_key.k_image, xmreg::get_xmr(tx_in_to_key.amount));
 
         cout << "Genesis <" << mixin_times_scale
-             << ">" <<  xmreg::timestamp_to_str(server_timestamp)
+             << ">" <<  xmreg::timestamp_to_str(server_timestamp, "%F")
              << endl;
 
         for (const crypto::signature &sig: tx.signatures[in_i])
