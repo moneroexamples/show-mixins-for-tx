@@ -171,7 +171,6 @@ int main(int ac, const char* av[]) {
 
     vector<string> mixin_timescales_str;
 
-
     // total number of inputs in the transaction tx
     size_t input_no = tx.vin.size();
 
@@ -333,7 +332,6 @@ int main(int ac, const char* av[]) {
         } // for (const uint64_t& i: absolute_offsets)
 
 
-
         // get mixins in time scale for visual representation
         string mixin_times_scale = xmreg::timestamps_time_scale(mixin_timestamps,
                                                                 server_timestamp);
@@ -353,8 +351,7 @@ int main(int ac, const char* av[]) {
 
     } // for (size_t in_i = 0; in_i < input_no; ++in_i)
 
-
-    print("\n\nMixin timescales for this transaction: \n");
+    print("\nMixin timescales for this transaction: \n\n");
 
     for (const string& mixin_times_scale: mixin_timescales_str)
     {
